@@ -58,17 +58,17 @@ const emotionOptions = [
   { value: 'customerservice', label: 'Customer Service (Supportive)' },
   { value: 'assistant', label: 'Assistant (Helpful/Smart)' },
 ];
+
 const cleanScriptForTTS = (text) => {
   if (!text) return '';
   let cleaned = text;
-  
+
   // 1. Remove "Why This Works" analysis sections and everything after it
   const whyWorksIndex = cleaned.search(/(\n|^)(#*\s*(🎯\s*)?Why\s+(this\s+)?(script\s+)?works\??|#*\s*(🎯\s*)?निष्कर्ष|#*\s*(🎯\s*)?विशेषताएं|#*\s*(🎯\s*)?महत्वपूर्ण)/i);
   if (whyWorksIndex !== -1) {
     cleaned = cleaned.substring(0, whyWorksIndex);
   }
 
-  // Split into lines for detailed processing
   const lines = cleaned.split('\n');
   const processedLines = [];
 
@@ -76,46 +76,29 @@ const cleanScriptForTTS = (text) => {
     line = line.trim();
     if (!line) continue;
 
-    // Remove markdown headers entirely (e.g. ###, ## Hook)
-    if (line.startsWith('#')) {
-      continue;
-    }
+    // Skip markdown headers (### Hook, ## Section, etc.)
+    if (line.startsWith('#')) continue;
 
-    // Remove lines explaining stage directions or shot descriptions, e.g. [Scene 1: ...] or [Camera cut to...]
-    if (line.startsWith('[') && line.endsWith(']')) {
-      continue;
-    }
+    // Skip lines that are purely a stage direction like [Scene 1: ...]
+    if (line.startsWith('[') && line.endsWith(']')) continue;
 
-    // Detect if the line starts with a non-text meta symbol/emoji (excluding quotes, letters, numbers, and basic punctuation)
-    const isMetaLine = /^[^\w\s\d'\u0022\u201C\u201D\u2018\u2019\u00AB\u00BB\u300A\u300B\u300E\u300F()\[\]{}.,!:?;\u002D\u0900-\u097F\u0964\u0965\u2014\u2013\u2026]/u.test(line);
-    if (isMetaLine) {
-      continue; // Skip the entire checklist/comment line!
-    }
+    // Strip inline stage directions in parentheses/brackets
+    line = line.replace(/\([^)]{0,120}\)/g, '');
+    line = line.replace(/\[[^\]]{0,120}\]/g, '');
 
-    // Strip stage directions in parentheses or brackets within the line, e.g. "(Dramatic music...)"
-    line = line.replace(/\([^)]*\)/g, '');
-    line = line.replace(/\[[^\]]*\]/g, '');
+    // Strip leading list bullets (-, *, •, 1., 2), etc.)
+    line = line.replace(/^[-*•+>]+\s*/, '');
+    line = line.replace(/^\d+[.)\s]+/, '');
 
-    // Strip list bullet symbols at the beginning (e.g. - or * or numbers followed by dot/parenthesis)
-    line = line.replace(/^[-*•+]+\s*/, '');
-    line = line.replace(/^\d+[\s\.)-]+\s*/, '');
+    // Strip emojis
+    line = line.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}]/gu, '');
+    try { line = line.replace(/\p{Extended_Pictographic}/gu, ''); } catch (e) {}
 
-    // Strip emojis completely from the spoken text
-    line = line.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu, '');
-    try {
-      line = line.replace(/\p{Extended_Pictographic}/gu, '');
-    } catch (e) {}
-
-    // Strip outer quotes (both single, double, curly, and Hindi-style) from the line
-    line = line.replace(/^['"“”‘«「\s]+|['"“”’»」\s]+$/g, '');
-
-    // Strip markdown symbols like ** or *
+    // Strip markdown bold/italic asterisks
     line = line.replace(/\*/g, '');
 
     line = line.trim();
-    if (line) {
-      processedLines.push(line);
-    }
+    if (line) processedLines.push(line);
   }
 
   return processedLines.join('\n');
@@ -992,13 +975,21 @@ const TranscriptGenerator = () => {
       await new Promise((resolve) => setTimeout(resolve, 600));
 
       setParaphrasedScript(res.data.paraphrased_script);
-      const cleaned = cleanScriptForTTS(res.data.paraphrased_script);
+      let cleaned = cleanScriptForTTS(res.data.paraphrased_script);
+      // Fallback: if cleaner strips everything, use the raw paraphrased text
+      if (!cleaned.trim()) {
+        cleaned = res.data.paraphrased_script
+          .replace(/^#+.*/gm, '')       // remove markdown headers
+          .replace(/\*+/g, '')           // remove asterisks
+          .replace(/\[[^\]]*\]/g, '')   // remove [stage directions]
+          .trim();
+      }
       setVoiceoverText(cleaned);
       toast.success('Script rewritten successfully!');
-      
+
       // Auto save
       setTimeout(() => {
-        api.put(`/projects/${projectId}`, { 
+        api.put(`/projects/${projectId}`, {
           paraphrased_script: res.data.paraphrased_script,
           voiceover_text: cleaned
         });
@@ -1821,7 +1812,7 @@ const TranscriptGenerator = () => {
               </span>
               <button
                 onClick={handleGenerateVoiceover}
-                disabled={generatingVoice || (activeTab === 'full' ? !paraphrasedScript : !voiceoverText)}
+                disabled={generatingVoice || (!paraphrasedScript && !voiceoverText)}
                 className="flex items-center gap-2 rounded-lg bg-gray-850 border border-gray-700 px-4 py-2 text-xs font-bold text-white hover:bg-gray-800 disabled:opacity-50"
               >
                 {generatingVoice ? (
