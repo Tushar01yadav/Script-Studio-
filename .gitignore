@@ -1,0 +1,48 @@
+# Environment secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Databases and Local Storage
+*.db
+*.sqlite
+*.sqlite3
+backend/script_studio.db
+backend/static/audio/*
+!backend/static/audio/.gitkeep
+
+# Python virtual environments and caches
+venv/
+.venv/
+env/
+backend/venv/
+backend/env/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Node modules and build outputs
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+dist-ssr/
+build/
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

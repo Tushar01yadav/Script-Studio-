@@ -1,0 +1,2066 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import { toast } from 'react-hot-toast';
+import { 
+  ClipboardDocumentIcon, 
+  ArrowDownTrayIcon,
+  PlayIcon,
+  PauseIcon,
+  ArrowPathIcon,
+  CircleStackIcon,
+  SparklesIcon,
+  SpeakerWaveIcon
+} from '@heroicons/react/24/outline';
+import WaveSurfer from 'wavesurfer.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
+import CustomSelect from '../components/CustomSelect';
+
+const languageOptions = [
+  { value: 'English', label: 'English' },
+  { value: 'Hindi', label: 'Hindi (हिंदी)' },
+  { value: 'Spanish', label: 'Spanish (Español)' },
+  { value: 'French', label: 'French (Français)' },
+  { value: 'German', label: 'German (Deutsch)' },
+  { value: 'Portuguese', label: 'Portuguese (Português)' },
+];
+
+const voiceOptions = [
+  { value: 'swara', label: 'Swara (Hindi Female - Sweet/Clear)' },
+  { value: 'madhur', label: 'Madhur (Hindi Male - Natural/Deep)' },
+  { value: 'jenny', label: 'Jenny (US English Female - Extremely Realistic)' },
+  { value: 'guy', label: 'Guy (US English Male - Extremely Realistic)' },
+  { value: 'steffan', label: 'Steffan (US English Male - Natural/Warm)' },
+  { value: 'michelle', label: 'Michelle (US English Female - Natural/Conversational)' },
+  { value: 'alloy', label: 'Ava (US English Female - Expressive)' },
+  { value: 'echo', label: 'Andrew (US English Male - Warm)' },
+  { value: 'onyx', label: 'Brian (US English Male - Professional)' },
+  { value: 'nova', label: 'Emma (US English Female - Clear)' },
+  { value: 'shimmer', label: 'Aria (US English Female - Professional)' },
+  { value: 'fable', label: 'Sonia (UK English Female - Professional)' },
+  { value: 'ryan', label: 'Ryan (UK English Male - Professional)' },
+  { value: 'libby', label: 'Libby (UK English Female - Natural/Clear)' },
+];
+
+const emotionOptions = [
+  { value: 'default', label: 'Default (Standard Tone)' },
+  { value: 'cheerful', label: 'Cheerful (Happy/Bright)' },
+  { value: 'sad', label: 'Sad (Emotional/Melancholy)' },
+  { value: 'excited', label: 'Excited (Energetic/Upbeat)' },
+  { value: 'friendly', label: 'Friendly (Warm/Inviting)' },
+  { value: 'hopeful', label: 'Hopeful (Positive/Optimistic)' },
+  { value: 'shouting', label: 'Shouting (Loud/Intense)' },
+  { value: 'whispering', label: 'Whispering (Quiet/Intimate)' },
+  { value: 'fearful', label: 'Fearful (Anxious/Tense)' },
+  { value: 'angry', label: 'Angry (Hostile/Strong)' },
+  { value: 'chat', label: 'Chat (Natural/Conversational)' },
+  { value: 'newscast', label: 'Newscast (Formal/Reporting)' },
+  { value: 'customerservice', label: 'Customer Service (Supportive)' },
+  { value: 'assistant', label: 'Assistant (Helpful/Smart)' },
+];
+const cleanScriptForTTS = (text) => {
+  if (!text) return '';
+  let cleaned = text;
+  
+  // 1. Remove "Why This Works" analysis sections and everything after it
+  const whyWorksIndex = cleaned.search(/(\n|^)(#*\s*(🎯\s*)?Why\s+(this\s+)?(script\s+)?works\??)/i);
+  if (whyWorksIndex !== -1) {
+    cleaned = cleaned.substring(0, whyWorksIndex);
+  }
+
+  // 2. Remove markdown horizontal rules (e.g. ---, ***)
+  cleaned = cleaned.replace(/^\s*[-*_]{3,}\s*$/gm, '');
+  
+  // 3. Remove title headers (e.g. 🎥 YouTube Narration Script: ... or 🎬 YouTube Narration Script 🎬)
+  // This matches lines containing "YouTube Narration Script" or just "Narration Script" (case-insensitive)
+  cleaned = cleaned.replace(/^.*Narrat(ion)?\s*Script.*$/gim, '');
+
+  // 4. Remove lines that are just headers or section names (like **[🎬 HOOK – 0:00 to 0:15]** or [🎬 HOOK])
+  cleaned = cleaned.replace(/^\*\*\[.*\]\*\*$/gm, '');
+  cleaned = cleaned.replace(/^\[.*\]$/gm, '');
+  cleaned = cleaned.replace(/^\*\*.*:\s*.*$/gm, '');
+  
+  // 5. Remove speaker labels like **NARRATOR (emotional, intense):** or NARRATOR:
+  cleaned = cleaned.replace(/^\*\*?[A-Z0-9a-z_ ]+(\([^)]*\))?:\*\*?/gm, '');
+  cleaned = cleaned.replace(/^[A-Z0-9a-z_ ]+(\([^)]*\))?:/gm, '');
+
+  // 6. Remove parenthetical stage directions or audio cues, e.g. "(Dramatic music...)" or [Sound effect]
+  cleaned = cleaned.replace(/\([^)]*\)/g, '');
+  cleaned = cleaned.replace(/\[[^\]]*\]/g, '');
+  cleaned = cleaned.replace(/\*/g, '');
+  
+  // Clean up extra white spaces/newlines
+  cleaned = cleaned.split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n');
+    
+  return cleaned;
+};
+
+const normalizeScenes = (scenesList) => {
+  if (!Array.isArray(scenesList)) return [];
+  return scenesList.map((scene, idx) => {
+    return {
+      scene_number: scene.scene_number ?? scene.sceneNumber ?? (idx + 1),
+      duration: scene.duration ?? scene.sceneDurationEstimate ?? scene.duration_estimate ?? '',
+      narration: scene.narration ?? scene.narrationText ?? scene.narration_text ?? '',
+      visual: scene.visual ?? scene.visualDescription ?? scene.visual_description ?? '',
+      image_prompt: scene.image_prompt ?? scene.aiImagePrompt ?? scene.imagePrompt ?? scene.ai_image_prompt ?? '',
+      generated_image_url: scene.generated_image_url ?? scene.generatedImageUrl ?? ''
+    };
+  });
+};
+
+const bufferToWav = (buffer) => {
+  const numOfChan = buffer.numberOfChannels,
+        length = buffer.length * numOfChan * 2 + 44,
+        bufferArr = new ArrayBuffer(length),
+        view = new DataView(bufferArr),
+        channels = [],
+        sampleRate = buffer.sampleRate;
+  let offset = 0,
+      pos = 0;
+
+  const setUint16 = (data) => {
+    view.setUint16(pos, data, true);
+    pos += 2;
+  };
+
+  const setUint32 = (data) => {
+    view.setUint32(pos, data, true);
+    pos += 4;
+  };
+
+  setUint32(0x46464952); // "RIFF"
+  setUint32(length - 8);
+  setUint32(0x45564157); // "WAVE"
+  setUint32(0x20746d66); // "fmt " chunk
+  setUint32(16);
+  setUint16(1);
+  setUint16(numOfChan);
+  setUint32(sampleRate);
+  setUint32(sampleRate * 2 * numOfChan);
+  setUint16(numOfChan * 2);
+  setUint16(16);
+  setUint32(0x61746164); // "data" chunk
+  setUint32(length - pos - 4);
+
+  for (let i = 0; i < numOfChan; i++) {
+    channels.push(buffer.getChannelData(i));
+  }
+
+  while (pos < length) {
+    for (let i = 0; i < numOfChan; i++) {
+      let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+      sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+      view.setInt16(pos, sample, true);
+      pos += 2;
+    }
+    offset++;
+  }
+
+  return new Blob([bufferArr], { type: 'audio/wav' });
+};
+
+const sliceAudioBuffer = (audioBuffer, startTime, endTime, audioContext) => {
+  const sampleRate = audioBuffer.sampleRate;
+  const startSample = Math.max(0, Math.floor(startTime * sampleRate));
+  const endSample = Math.min(audioBuffer.length, Math.floor(endTime * sampleRate));
+  const frameCount = endSample - startSample;
+  
+  if (frameCount <= 0) return null;
+  
+  const newBuffer = audioContext.createBuffer(
+    audioBuffer.numberOfChannels,
+    frameCount,
+    sampleRate
+  );
+  
+  for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+    const channelData = audioBuffer.getChannelData(channel);
+    const newChannelData = newBuffer.getChannelData(channel);
+    newChannelData.set(channelData.subarray(startSample, endSample));
+  }
+  
+  return newBuffer;
+};
+
+const concatAudioBuffers = (buffer1, buffer2, audioContext) => {
+  if (!buffer1) return buffer2;
+  if (!buffer2) return buffer1;
+  
+  const sampleRate = buffer1.sampleRate;
+  const frameCount = buffer1.length + buffer2.length;
+  
+  const newBuffer = audioContext.createBuffer(
+    buffer1.numberOfChannels,
+    frameCount,
+    sampleRate
+  );
+  
+  for (let channel = 0; channel < buffer1.numberOfChannels; channel++) {
+    const newChannelData = newBuffer.getChannelData(channel);
+    newChannelData.set(buffer1.getChannelData(channel), 0);
+    newChannelData.set(buffer2.getChannelData(channel), buffer1.length);
+  }
+  
+  return newBuffer;
+};
+
+const spliceAudioBuffer = (originalBuffer, newSegmentBuffer, startTime, endTime, audioContext) => {
+  const part1 = sliceAudioBuffer(originalBuffer, 0, startTime, audioContext);
+  const part3 = sliceAudioBuffer(originalBuffer, endTime, originalBuffer.duration, audioContext);
+  
+  let result = part1;
+  if (newSegmentBuffer) {
+    result = concatAudioBuffers(result, newSegmentBuffer, audioContext);
+  }
+  result = concatAudioBuffers(result, part3, audioContext);
+  return result;
+};
+
+const TranscriptGenerator = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const projectId = searchParams.get('project');
+
+  // Project data
+  const [project, setProject] = useState(null);
+  const [title, setTitle] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [paraphrasedScript, setParaphrasedScript] = useState('');
+  const [voiceoverText, setVoiceoverText] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
+
+  // Loading/running states
+  const [loadingProject, setLoadingProject] = useState(false);
+  const [generatingTranscript, setGeneratingTranscript] = useState(false);
+  const [paraphrasing, setParaphrasing] = useState(false);
+  const [paraphraseProgress, setParaphraseProgress] = useState(0);
+  const [paraphraseStage, setParaphraseStage] = useState('Initializing...');
+  const [generatingVoice, setGeneratingVoice] = useState(false);
+  const [activeTab, setActiveTab] = useState('full'); // 'full' or 'voiceover'
+  const [selectedVoice, setSelectedVoice] = useState('swara'); // Default to high-quality Hindi voice 'swara'
+  const [paraphraseLanguage, setParaphraseLanguage] = useState('English');
+  const [selectedEmotion, setSelectedEmotion] = useState('default');
+
+  // TTS audio playback states
+  const [audioPlayer, setAudioPlayer] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentlyPlayingUrl, setCurrentlyPlayingUrl] = useState(null);
+  const [audioFiles, setAudioFiles] = useState([]);
+  const [audioName, setAudioName] = useState('Voiceover 1');
+  const [editingAudioId, setEditingAudioId] = useState(null);
+  const [editingAudioName, setEditingAudioName] = useState('');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  // Audio Editor States
+  const [isEditingAudio, setIsEditingAudio] = useState(false);
+  const [editorAudioUrl, setEditorAudioUrl] = useState(null);
+  const [editorAudioItem, setEditorAudioItem] = useState(null);
+  const [editorBuffer, setEditorBuffer] = useState(null);
+  const [editorLoading, setEditorLoading] = useState(false);
+  const [editorSpeed, setEditorSpeed] = useState(1.0);
+  const [editorZoom, setEditorZoom] = useState(20);
+  const [historyStack, setHistoryStack] = useState([]);
+  const [editorStartTime, setEditorStartTime] = useState(0);
+  const [editorEndTime, setEditorEndTime] = useState(0);
+  const [editorLoop, setEditorLoop] = useState(false);
+  const [editorTextSegment, setEditorTextSegment] = useState('');
+  const [regeneratingSegment, setRegeneratingSegment] = useState(false);
+  const [isEditorPlaying, setIsEditorPlaying] = useState(false);
+  const [activePlayTime, setActivePlayTime] = useState(0);
+
+  // Audio Editor Refs
+  const waveformRef = useRef(null);
+  const wavesurferRef = useRef(null);
+  const canvasRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const audioCtxRef = useRef(null);
+
+  const formatTime = (secs) => {
+    if (isNaN(secs) || secs === Infinity) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const handleSeek = (e) => {
+    const val = parseFloat(e.target.value);
+    setCurrentTime(val);
+    if (audioPlayer) {
+      audioPlayer.currentTime = val;
+    }
+  };
+
+  const togglePlayAudio = (url) => {
+    if (!url) return;
+
+    if (currentlyPlayingUrl === url) {
+      if (isPlaying) {
+        audioPlayer.pause();
+        setIsPlaying(false);
+      } else {
+        audioPlayer.play().catch(() => toast.error("Failed to play audio"));
+        setIsPlaying(true);
+      }
+    } else {
+      if (audioPlayer) {
+        audioPlayer.pause();
+      }
+      const newPlayer = new Audio(url);
+      newPlayer.onended = () => {
+        setIsPlaying(false);
+        setCurrentlyPlayingUrl(null);
+        setCurrentTime(0);
+      };
+      newPlayer.ontimeupdate = () => {
+        setCurrentTime(newPlayer.currentTime);
+      };
+      newPlayer.onloadedmetadata = () => {
+        setDuration(newPlayer.duration);
+      };
+      if (newPlayer.duration) {
+        setDuration(newPlayer.duration);
+      }
+      setAudioPlayer(newPlayer);
+      setCurrentlyPlayingUrl(url);
+      setIsPlaying(true);
+      newPlayer.play().catch(() => {
+        toast.error("Failed to play audio");
+        setIsPlaying(false);
+        setCurrentlyPlayingUrl(null);
+      });
+    }
+  };
+
+  const startEditing = (audio) => {
+    setEditingAudioId(audio.id);
+    setEditingAudioName(audio.name);
+  };
+
+  const saveRename = async (id) => {
+    if (!editingAudioName.trim()) {
+      return toast.error("Audio name cannot be empty");
+    }
+    const updated = audioFiles.map(item => {
+      if (item.id === id) {
+        return { ...item, name: editingAudioName.trim() };
+      }
+      return item;
+    });
+    setAudioFiles(updated);
+    setEditingAudioId(null);
+    try {
+      await api.put(`/projects/${projectId}`, { audio_files: JSON.stringify(updated) });
+      toast.success("Audio renamed successfully!");
+    } catch (e) {
+      toast.error("Failed to save renamed audio");
+    }
+  };
+
+  const handleDeleteAudio = async (id) => {
+    const updated = audioFiles.filter(item => item.id !== id);
+    setAudioFiles(updated);
+    
+    const itemToDelete = audioFiles.find(item => item.id === id);
+    if (itemToDelete && currentlyPlayingUrl === itemToDelete.url) {
+      if (audioPlayer) {
+        audioPlayer.pause();
+      }
+      setIsPlaying(false);
+      setCurrentlyPlayingUrl(null);
+    }
+    
+    if (itemToDelete && audioUrl === itemToDelete.url) {
+      setAudioUrl('');
+    }
+
+    try {
+      await api.put(`/projects/${projectId}`, { audio_files: JSON.stringify(updated) });
+      toast.success("Audio deleted successfully!");
+    } catch (e) {
+      toast.error("Failed to delete audio from server");
+    }
+  };
+
+  // === Audio Editor Effects & Operations ===
+
+  const enterAudioEditor = (url, audioItem = null) => {
+    // Pause main playback if active
+    if (audioPlayer) {
+      try {
+        audioPlayer.pause();
+      } catch (e) {}
+      setIsPlaying(false);
+    }
+
+    setEditorAudioUrl(url);
+    setEditorAudioItem(audioItem);
+    setIsEditingAudio(true);
+    setEditorSpeed(1.0);
+    setEditorZoom(20);
+    setEditorLoop(false);
+    setEditorTextSegment('');
+    setActivePlayTime(0);
+    setHistoryStack([]);
+  };
+
+  const fetchAndDecodeAudio = async (url) => {
+    setEditorLoading(true);
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      
+      const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
+      audioCtxRef.current = audioContext;
+      
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      setEditorBuffer(audioBuffer);
+      setHistoryStack([audioBuffer]);
+      setEditorStartTime(0);
+      setEditorEndTime(audioBuffer.duration);
+    } catch (err) {
+      console.error("Failed to decode audio buffer", err);
+      toast.error("Failed to load audio data for editing.");
+    } finally {
+      setEditorLoading(false);
+    }
+  };
+
+  const drawOscilloscope = () => {
+    if (!canvasRef.current || !analyserRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const analyser = analyserRef.current;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    const draw = () => {
+      if (!analyserRef.current || !canvasRef.current) return;
+      animationFrameRef.current = requestAnimationFrame(draw);
+      
+      analyser.getByteTimeDomainData(dataArray);
+      
+      ctx.fillStyle = 'rgba(13, 18, 34, 0.4)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.lineWidth = 2;
+      
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      gradient.addColorStop(0, '#6366f1');
+      gradient.addColorStop(0.5, '#8b5cf6');
+      gradient.addColorStop(1, '#6366f1');
+      ctx.strokeStyle = gradient;
+      
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#6366f1';
+      
+      ctx.beginPath();
+      
+      const sliceWidth = canvas.width * 1.0 / bufferLength;
+      let x = 0;
+      
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = v * canvas.height / 2;
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+      }
+      
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    };
+    
+    draw();
+  };
+
+  const reloadWavesurferBuffer = async (audioBuffer) => {
+    setEditorLoading(true);
+    try {
+      const wavBlob = bufferToWav(audioBuffer);
+      const blobUrl = URL.createObjectURL(wavBlob);
+      
+      if (wavesurferRef.current) {
+        wavesurferRef.current.load(blobUrl);
+      }
+      
+      setEditorStartTime(0);
+      setEditorEndTime(audioBuffer.duration);
+    } catch (e) {
+      console.error("Failed to reload wavesurfer", e);
+    } finally {
+      setEditorLoading(false);
+    }
+  };
+
+  const handleZoomChange = (zoomVal) => {
+    setEditorZoom(zoomVal);
+    if (wavesurferRef.current) {
+      wavesurferRef.current.zoom(zoomVal);
+    }
+  };
+
+  const handleSpeedChange = (speed) => {
+    setEditorSpeed(speed);
+    if (wavesurferRef.current) {
+      wavesurferRef.current.setPlaybackRate(speed);
+    }
+  };
+
+  const handleUndo = () => {
+    if (historyStack.length > 1) {
+      const newStack = historyStack.slice(0, -1);
+      const prevBuffer = newStack[newStack.length - 1];
+      setHistoryStack(newStack);
+      setEditorBuffer(prevBuffer);
+      reloadWavesurferBuffer(prevBuffer);
+      toast.success("Edits undone!");
+    } else {
+      toast.error("Nothing to undo.");
+    }
+  };
+
+  const handleRulerClick = (e) => {
+    if (!wavesurferRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    const targetTime = pct * (wavesurferRef.current.getDuration() || 0);
+    wavesurferRef.current.setTime(targetTime);
+  };
+
+  const handleLoopToggle = () => {
+    setEditorLoop(prev => !prev);
+  };
+
+  const handleSelectSceneBlock = (block) => {
+    setEditorStartTime(block.startTime);
+    setEditorEndTime(block.endTime);
+    
+    if (wavesurferRef.current) {
+      const ws = wavesurferRef.current;
+      const regionsPlugin = ws.plugins[0];
+      if (regionsPlugin) {
+        regionsPlugin.clearRegions();
+        regionsPlugin.addRegion({
+          start: block.startTime,
+          end: block.endTime,
+          color: 'rgba(255, 0, 85, 0.15)',
+        });
+      }
+      ws.setTime(block.startTime);
+    }
+    
+    setEditorTextSegment(block.narration || '');
+  };
+
+  const handleTrim = () => {
+    if (!editorBuffer) return;
+    
+    const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
+    const trimmed = sliceAudioBuffer(editorBuffer, editorStartTime, editorEndTime, audioContext);
+    
+    if (trimmed) {
+      setEditorBuffer(trimmed);
+      setHistoryStack(prev => [...prev, trimmed]);
+      reloadWavesurferBuffer(trimmed);
+      toast.success("Audio trimmed to selection!");
+    } else {
+      toast.error("Invalid selection range.");
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (!editorBuffer) return;
+    
+    const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
+    const spliced = spliceAudioBuffer(editorBuffer, null, editorStartTime, editorEndTime, audioContext);
+    
+    if (spliced) {
+      setEditorBuffer(spliced);
+      setHistoryStack(prev => [...prev, spliced]);
+      reloadWavesurferBuffer(spliced);
+      toast.success("Selection deleted from audio!");
+    }
+  };
+
+  const handleRegenerateSelection = async () => {
+    if (!editorTextSegment.trim()) {
+      return toast.error("Please enter the new narration text first.");
+    }
+    setRegeneratingSegment(true);
+    try {
+      const res = await api.post('/tts/generate', {
+        text: editorTextSegment,
+        voice: selectedVoice,
+        emotion: selectedEmotion
+      });
+      
+      const segmentUrl = `http://localhost:8000${res.data.audio_url}`;
+      
+      const segmentResponse = await fetch(segmentUrl);
+      const segmentArrayBuffer = await segmentResponse.arrayBuffer();
+      
+      const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
+      const segmentBuffer = await audioContext.decodeAudioData(segmentArrayBuffer);
+      
+      const spliced = spliceAudioBuffer(editorBuffer, segmentBuffer, editorStartTime, editorEndTime, audioContext);
+      
+      if (spliced) {
+        setEditorBuffer(spliced);
+        setHistoryStack(prev => [...prev, spliced]);
+        reloadWavesurferBuffer(spliced);
+        setEditorTextSegment('');
+        toast.success("Spliced regenerated voiceover segment into selection!");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to regenerate segment.");
+    } finally {
+      setRegeneratingSegment(false);
+    }
+  };
+
+  const saveEditorChanges = async () => {
+    if (!editorBuffer) return;
+    setEditorLoading(true);
+    try {
+      const wavBlob = bufferToWav(editorBuffer);
+      const file = new File([wavBlob], "edited_voiceover.wav", { type: "audio/wav" });
+      
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const uploadRes = await api.post('/tts/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      const newUrl = `http://localhost:8000${uploadRes.data.audio_url}`;
+      const durationSec = uploadRes.data.duration;
+      
+      let durationStr = '0:00';
+      if (durationSec && !isNaN(durationSec)) {
+        const minutes = Math.floor(durationSec / 60);
+        const seconds = Math.floor(durationSec % 60);
+        durationStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      }
+      
+      let updatedAudios = [...audioFiles];
+      if (editorAudioItem) {
+        updatedAudios = audioFiles.map(item => {
+          if (item.id === editorAudioItem.id) {
+            return {
+              ...item,
+              url: newUrl,
+              duration: durationStr,
+              created_at: new Date().toISOString()
+            };
+          }
+          return item;
+        });
+        
+        if (audioUrl === editorAudioItem.url) {
+          setAudioUrl(newUrl);
+        }
+      } else {
+        setAudioUrl(newUrl);
+        const newAudioItem = {
+          id: Date.now().toString(),
+          name: `Edited Voiceover ${audioFiles.length + 1}`,
+          url: newUrl,
+          voice: selectedVoice,
+          emotion: selectedEmotion,
+          duration: durationStr,
+          created_at: new Date().toISOString()
+        };
+        updatedAudios = [newAudioItem, ...audioFiles];
+      }
+      
+      setAudioFiles(updatedAudios);
+      
+      await api.put(`/projects/${projectId}`, {
+        audio_path: editorAudioItem ? (audioUrl === editorAudioItem.url ? newUrl : audioUrl) : newUrl,
+        audio_files: JSON.stringify(updatedAudios)
+      });
+      
+      toast.success("Audio edits saved successfully!");
+      setIsEditingAudio(false);
+      setEditorAudioUrl(null);
+      setEditorAudioItem(null);
+      setEditorBuffer(null);
+      
+    } catch (err) {
+      console.error("Failed to save audio edits", err);
+      toast.error("Failed to save audio editor updates.");
+    } finally {
+      setEditorLoading(false);
+    }
+  };
+
+  // Wavesurfer initialization and control effect
+  useEffect(() => {
+    if (!isEditingAudio || !editorAudioUrl || !waveformRef.current) return;
+
+    // Create WaveSurfer
+    const ws = WaveSurfer.create({
+      container: waveformRef.current,
+      waveColor: '#1e293b',
+      progressColor: '#6366f1',
+      cursorColor: '#8b5cf6',
+      barWidth: 2,
+      barGap: 3,
+      responsive: true,
+      height: 80,
+    });
+
+    wavesurferRef.current = ws;
+
+    // Register regions plugin
+    const regions = ws.registerPlugin(RegionsPlugin.create());
+
+    // Enable drag selection
+    regions.enableDragSelection({
+      color: 'rgba(255, 0, 85, 0.15)',
+    });
+
+    regions.on('region-created', (region) => {
+      const allRegions = regions.getRegions();
+      allRegions.forEach(r => {
+        if (r.id !== region.id) r.remove();
+      });
+      setEditorStartTime(region.start);
+      setEditorEndTime(region.end);
+    });
+
+    regions.on('region-update-end', (region) => {
+      setEditorStartTime(region.start);
+      setEditorEndTime(region.end);
+    });
+
+    ws.on('ready', () => {
+      try {
+        const media = ws.getMediaElement();
+        if (media) {
+          media.crossOrigin = "anonymous";
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          audioCtxRef.current = audioContext;
+          const source = audioContext.createMediaElementSource(media);
+          const analyser = audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+          analyser.connect(audioContext.destination);
+          analyserRef.current = analyser;
+          drawOscilloscope();
+        }
+      } catch (e) {
+        console.error("Visualizer initialization failed", e);
+      }
+    });
+
+    ws.on('play', () => setIsEditorPlaying(true));
+    ws.on('pause', () => setIsEditorPlaying(false));
+    ws.on('finish', () => setIsEditorPlaying(false));
+    ws.on('timeupdate', () => {
+      setActivePlayTime(ws.getCurrentTime());
+    });
+
+    ws.load(editorAudioUrl);
+    fetchAndDecodeAudio(editorAudioUrl);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      ws.destroy();
+      wavesurferRef.current = null;
+      analyserRef.current = null;
+      audioCtxRef.current = null;
+    };
+  }, [isEditingAudio, editorAudioUrl]);
+
+  // Audio Editor loop playback listener
+  useEffect(() => {
+    if (!wavesurferRef.current) return;
+    
+    const ws = wavesurferRef.current;
+    const handleTimeUpdate = () => {
+      if (editorLoop) {
+        const cTime = ws.getCurrentTime();
+        if (cTime >= editorEndTime || cTime < editorStartTime) {
+          ws.setTime(editorStartTime);
+        }
+      }
+    };
+    
+    ws.on('timeupdate', handleTimeUpdate);
+    return () => {
+      ws.un('timeupdate', handleTimeUpdate);
+    };
+  }, [editorLoop, editorStartTime, editorEndTime]);
+
+  // Selected project loader
+  useEffect(() => {
+    if (!projectId) return;
+
+    // Immediately reset states to prevent leakage of prior project data
+    setProject(null);
+    setTitle('');
+    setYoutubeUrl('');
+    setTranscript('');
+    setParaphrasedScript('');
+    setVoiceoverText('');
+    setAudioUrl('');
+    setAudioFiles([]);
+    setAudioName('Voiceover 1');
+    setIsPlaying(false);
+    setCurrentlyPlayingUrl(null);
+    if (audioPlayer) {
+      try {
+        audioPlayer.pause();
+      } catch (e) {}
+      setAudioPlayer(null);
+    }
+
+    setLoadingProject(true);
+    api.get(`/projects/${projectId}`)
+      .then(res => {
+        const p = res.data;
+        setProject(p);
+        setTitle(p.title);
+        setYoutubeUrl(p.youtube_url || '');
+        setTranscript(p.transcript || '');
+        setParaphrasedScript(p.paraphrased_script || '');
+        setVoiceoverText(p.voiceover_text || '');
+        setAudioUrl(p.audio_path || '');
+        
+        if (p.audio_files) {
+          try {
+            const parsed = JSON.parse(p.audio_files);
+            const list = Array.isArray(parsed) ? parsed : [];
+            setAudioFiles(list);
+            setAudioName(`Voiceover ${list.length + 1}`);
+          } catch(e) {
+            setAudioFiles([]);
+            setAudioName('Voiceover 1');
+          }
+        } else {
+          setAudioFiles([]);
+          setAudioName('Voiceover 1');
+        }
+      })
+      .catch(err => {
+        toast.error('Failed to load project details');
+      })
+      .finally(() => {
+        setLoadingProject(false);
+      });
+  }, [projectId]);
+
+  // Clean up audio player on unmount
+  useEffect(() => {
+    return () => {
+      if (audioPlayer) {
+        audioPlayer.pause();
+      }
+    };
+  }, [audioPlayer]);
+
+  // Save current project state helper
+  const handleSaveProject = async (showToast = true) => {
+    if (!projectId) {
+      return toast.error("Please create or select a project first from the Dashboard.");
+    }
+    try {
+      const payload = {
+        title,
+        youtube_url: youtubeUrl,
+        transcript,
+        paraphrased_script: paraphrasedScript,
+        voiceover_text: voiceoverText,
+        audio_path: audioUrl,
+        audio_files: JSON.stringify(audioFiles)
+      };
+      const res = await api.put(`/projects/${projectId}`, payload);
+      setProject(res.data);
+      if (showToast) toast.success('Project saved successfully!');
+      return res.data;
+    } catch (err) {
+      toast.error('Failed to save project updates.');
+      throw err;
+    }
+  };
+
+  // Extract transcript API trigger
+  const handleGenerateTranscript = async () => {
+    if (!youtubeUrl.trim()) {
+      return toast.error("Please provide a valid YouTube URL");
+    }
+    setGeneratingTranscript(true);
+    try {
+      const res = await api.post('/transcript/generate', { url: youtubeUrl });
+      setTranscript(res.data.transcript);
+      toast.success('Transcript extracted successfully!');
+      
+      // Auto save after extracting
+      setTimeout(() => {
+        setTranscript(prev => {
+          api.put(`/projects/${projectId}`, { youtube_url: youtubeUrl, transcript: res.data.transcript });
+          return prev;
+        });
+      }, 500);
+    } catch (err) {
+      const msg = err.response?.data?.detail || "Could not retrieve YouTube transcript.";
+      toast.error(msg);
+    } finally {
+      setGeneratingTranscript(false);
+    }
+  };
+
+  // Mistral Paraphrase API trigger
+  const handleParaphrase = async () => {
+    if (!transcript.trim() || paraphrasing) {
+      return;
+    }
+    setParaphrasing(true);
+    setParaphraseProgress(0);
+    setParaphraseStage("Initializing AI...");
+
+    // Smoothly increment progress up to 90%
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 6) + 4; // 4-9% steps
+      if (progress > 90) {
+        progress = 90;
+        setParaphraseStage("Finalizing rewritten script...");
+      } else if (progress > 70) {
+        setParaphraseStage("Polishing tone and flow...");
+      } else if (progress > 45) {
+        setParaphraseStage("Paraphrasing content...");
+      } else if (progress > 20) {
+        setParaphraseStage("Structuring narration hook...");
+      }
+      setParaphraseProgress(progress);
+    }, 250);
+
+    try {
+      const res = await api.post('/script/paraphrase', { 
+        transcript,
+        language: paraphraseLanguage 
+      });
+      clearInterval(interval);
+      setParaphraseProgress(100);
+      setParaphraseStage("Completed!");
+      // Short delay for the user to see the 100% completion
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      setParaphrasedScript(res.data.paraphrased_script);
+      const cleaned = cleanScriptForTTS(res.data.paraphrased_script);
+      setVoiceoverText(cleaned);
+      toast.success('Script rewritten successfully!');
+      
+      // Auto save
+      setTimeout(() => {
+        api.put(`/projects/${projectId}`, { 
+          paraphrased_script: res.data.paraphrased_script,
+          voiceover_text: cleaned
+        });
+      }, 500);
+    } catch (err) {
+      clearInterval(interval);
+      toast.error(err.response?.data?.detail || "Mistral AI rewrite failed.");
+    } finally {
+      setParaphrasing(false);
+    }
+  };
+
+  // OpenAI TTS API trigger
+  const handleGenerateVoiceover = async () => {
+    const textToSpeak = voiceoverText.trim() || cleanScriptForTTS(paraphrasedScript);
+    if (!textToSpeak.trim()) {
+      return toast.error("Please paraphrase your script first.");
+    }
+    setGeneratingVoice(true);
+    try {
+      const res = await api.post('/tts/generate', { 
+        text: textToSpeak,
+        voice: selectedVoice,
+        emotion: selectedEmotion
+      });
+      const url = `http://localhost:8000${res.data.audio_url}`;
+      const durationSec = res.data.duration;
+      
+      let durationStr = '0:00';
+      if (durationSec && !isNaN(durationSec)) {
+        const minutes = Math.floor(durationSec / 60);
+        const seconds = Math.floor(durationSec % 60);
+        durationStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      }
+      
+      setAudioUrl(url);
+
+      const newAudioItem = {
+        id: Date.now().toString(),
+        name: audioName.trim() || `Voiceover ${audioFiles.length + 1}`,
+        url: url,
+        voice: selectedVoice,
+        emotion: selectedEmotion,
+        duration: durationStr,
+        created_at: new Date().toISOString()
+      };
+      
+      const updatedAudios = [newAudioItem, ...audioFiles];
+      setAudioFiles(updatedAudios);
+      toast.success('Voiceover generated successfully!');
+      
+      // Auto save audio url and updated list
+      await api.put(`/projects/${projectId}`, { 
+        audio_path: url,
+        voiceover_text: textToSpeak,
+        audio_files: JSON.stringify(updatedAudios)
+      });
+
+      // Initialize new audio element
+      if (audioPlayer) {
+        audioPlayer.pause();
+      }
+      const newAudio = new Audio(url);
+      newAudio.onended = () => {
+        setIsPlaying(false);
+        setCurrentlyPlayingUrl(null);
+        setCurrentTime(0);
+      };
+      newAudio.ontimeupdate = () => {
+        setCurrentTime(newAudio.currentTime);
+      };
+      newAudio.onloadedmetadata = () => {
+        setDuration(newAudio.duration);
+      };
+      if (newAudio.duration) {
+        setDuration(newAudio.duration);
+      }
+      setAudioPlayer(newAudio);
+      setCurrentlyPlayingUrl(url);
+      setIsPlaying(true);
+      newAudio.play().catch(() => {
+        toast.error("Failed to play audio");
+        setIsPlaying(false);
+      });
+      
+      setAudioName(`Voiceover ${updatedAudios.length + 1}`);
+
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Voiceover generation failed.");
+    } finally {
+      setGeneratingVoice(false);
+    }
+  };
+
+  // Play/Pause Audio wrapper
+  const togglePlay = () => {
+    togglePlayAudio(audioUrl);
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  if (!projectId) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl bg-[#0d1222]/30 py-24 text-center border border-gray-800">
+        <h3 className="text-xl font-bold text-white mb-2">No active project selected</h3>
+        <p className="text-gray-400 max-w-sm mb-6">Please navigate to the Dashboard and choose or create a project to start working.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 transition-all"
+        >
+          Go to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  if (loadingProject) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (isEditingAudio) {
+    let scenesList = [];
+    if (project && project.scene_plan) {
+      try {
+        const parsed = JSON.parse(project.scene_plan);
+        if (Array.isArray(parsed)) scenesList = normalizeScenes(parsed);
+      } catch (e) {}
+    }
+
+    const totalChars = scenesList.reduce((sum, s) => sum + (s.narration?.length || 0), 0) || 1;
+    let currentOffsetPct = 0;
+    const sceneTimelineBlocks = scenesList.map((scene, index) => {
+      const charLen = scene.narration?.length || 0;
+      const pctWidth = (charLen / totalChars) * 100;
+      const block = {
+        ...scene,
+        widthPct: pctWidth,
+        leftPct: currentOffsetPct,
+        startTime: (currentOffsetPct / 100) * (editorBuffer?.duration || 30),
+        endTime: ((currentOffsetPct + pctWidth) / 100) * (editorBuffer?.duration || 30)
+      };
+      currentOffsetPct += pctWidth;
+      return block;
+    });
+
+    const activeScene = sceneTimelineBlocks.find(
+      block => activePlayTime >= block.startTime && activePlayTime <= block.endTime
+    ) || sceneTimelineBlocks[0];
+
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        {/* Editor Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-800 pb-4">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold">🎬</span>
+              Video & Storyboard Editor
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Editing: <span className="text-indigo-400 font-semibold">{editorAudioItem ? editorAudioItem.name : "Latest Voiceover"}</span> | Video & Audio Timeline Sync
+            </p>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => {
+                setIsEditingAudio(false);
+                setEditorAudioUrl(null);
+                setEditorAudioItem(null);
+                setEditorBuffer(null);
+              }}
+              className="flex-1 sm:flex-initial rounded-lg bg-gray-800 border border-gray-700 px-4 py-2 text-xs font-bold text-zinc-300 hover:bg-gray-750 hover:text-white transition-all text-center"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveEditorChanges}
+              disabled={editorLoading}
+              className="flex-1 sm:flex-initial rounded-lg bg-emerald-600 border border-emerald-500/10 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-all text-center disabled:opacity-50 shadow-md shadow-emerald-500/10"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        {/* Workspace: Preview Player & Properties Inspector */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          
+          {/* Left: Video Preview Player (2/3 Width) */}
+          <div className="lg:col-span-2 space-y-4">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Video Preview</h3>
+            <div className="relative aspect-video w-full rounded-xl bg-black border border-gray-800/80 flex flex-col items-center justify-center overflow-hidden group shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+              {/* Storyboard Image Slideshow */}
+              {activeScene && activeScene.generated_image_url ? (
+                <img 
+                  src={activeScene.generated_image_url} 
+                  alt={`Scene ${activeScene.scene_number} Preview`}
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
+                  <div className="h-12 w-12 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                    </svg>
+                  </div>
+                  <span className="text-xs text-gray-500 font-medium">No storyboard scene visuals generated yet</span>
+                </div>
+              )}
+
+              {/* Pitch wave overlay at the bottom */}
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black via-black/60 to-transparent flex items-end">
+                <canvas ref={canvasRef} width="600" height="50" className="w-full h-12 opacity-80 mix-blend-screen pointer-events-none" />
+              </div>
+
+              {/* Active scene index label */}
+              {activeScene && (
+                <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-md border border-gray-800 text-[10px] text-indigo-400 font-bold tracking-wider font-mono">
+                  SCENE {activeScene.scene_number} / {scenesList.length}
+                </div>
+              )}
+
+              {/* Live Timecode Badge */}
+              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-md border border-gray-800 text-[10px] text-white font-bold font-mono">
+                {formatTime(activePlayTime)} / {formatTime(editorBuffer?.duration || duration || 0)}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Properties Inspector (1/3 Width) */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Properties & Selection</h3>
+            <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-4 sm:p-5 space-y-4 sm:space-y-5 h-auto lg:h-[calc(100%-28px)] min-h-0 lg:min-h-[350px] flex flex-col justify-between relative">
+              {editorLoading && (
+                <div className="absolute inset-0 bg-[#0d1222]/70 backdrop-blur-sm flex items-center justify-center rounded-xl z-20">
+                  <div className="flex flex-col items-center space-y-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent shadow-[0_0_15px_rgba(99,102,241,0.3)]"></div>
+                    <span className="text-xs text-gray-300 font-semibold">Processing...</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Active selection info */}
+                <div className="bg-gray-950/60 p-3 rounded-lg border border-gray-850">
+                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Active Selection</div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs font-bold text-white">Range</span>
+                    <span className="font-mono text-xs text-pink-500 font-semibold bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20">
+                      {formatTime(editorStartTime)} - {formatTime(editorEndTime)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Slicing Actions */}
+                <div className="space-y-2">
+                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Timeline Editing</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleTrim}
+                      className="rounded-lg bg-pink-600/25 border border-pink-500/30 py-2 text-xs font-bold text-pink-400 hover:bg-pink-600 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                      title="Keep only the selection and crop out the rest"
+                    >
+                      Crop / Keep
+                    </button>
+                    <button
+                      onClick={handleDeleteSelected}
+                      className="rounded-lg bg-gray-850 border border-gray-700 py-2 text-xs font-bold text-gray-300 hover:bg-red-950/40 hover:text-red-400 hover:border-red-500/20 transition-all flex items-center justify-center gap-1.5"
+                      title="Cut selected region and splice the remainder"
+                    >
+                      Cut Selection
+                    </button>
+                  </div>
+                </div>
+
+                {/* Segment Regeneration */}
+                <div className="space-y-2">
+                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Regenerate Selection text</div>
+                  <p className="text-[10px] text-gray-500 leading-normal">
+                    Type text below to overwrite the highlighted timeline slot.
+                  </p>
+                  <textarea
+                    value={editorTextSegment}
+                    onChange={(e) => setEditorTextSegment(e.target.value)}
+                    className="w-full h-16 lg:h-24 rounded-lg border border-gray-700 bg-gray-900/60 p-3 text-xs text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none resize-none font-sans"
+                    placeholder="Enter segment script replacement..."
+                  />
+                  <button
+                    onClick={handleRegenerateSelection}
+                    disabled={regeneratingSegment || !editorTextSegment.trim() || editorStartTime === editorEndTime}
+                    className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {regeneratingSegment ? (
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    ) : (
+                      <>
+                        <SparklesIcon className="h-4 w-4" />
+                        Regenerate & Splice
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Save changes */}
+              <div className="border-t border-gray-850 pt-3 hidden lg:block">
+                <button
+                  onClick={saveEditorChanges}
+                  disabled={editorLoading}
+                  className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
+                >
+                  Save & Apply Edits
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline Panel (Full Width, Bottom) */}
+        <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+          
+          {/* Timeline Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-3">
+            
+            {/* Playback & History Controls */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (wavesurferRef.current) wavesurferRef.current.playPause();
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_12px_rgba(99,102,241,0.3)] animate-pulse"
+                title="Play / Pause (Space)"
+              >
+                {isEditorPlaying ? (
+                  <PauseIcon className="h-4 w-4 fill-current" />
+                ) : (
+                  <PlayIcon className="h-4 w-4 fill-current ml-0.5" />
+                )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  if (wavesurferRef.current) wavesurferRef.current.setTime(0);
+                }}
+                className="flex h-8 items-center justify-center gap-1.5 px-3 rounded-md bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all border border-gray-700"
+                title="Rewind to start"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+                Rewind
+              </button>
+
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={historyStack.length <= 1}
+                className="flex h-8 items-center justify-center gap-1.5 px-3 rounded-md bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all border border-gray-700 disabled:opacity-40 disabled:hover:bg-gray-800"
+                title={`Undo last edit (${historyStack.length > 1 ? historyStack.length - 1 : 0} steps available)`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                Undo {historyStack.length > 1 && <span className="bg-pink-500/20 text-pink-400 px-1 rounded text-[10px] ml-0.5">{historyStack.length - 1}</span>}
+              </button>
+
+              <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none ml-2">
+                <input
+                  type="checkbox"
+                  checked={editorLoop}
+                  onChange={handleLoopToggle}
+                  className="rounded border-gray-700 bg-gray-950 text-pink-500 focus:ring-0 cursor-pointer h-4 w-4"
+                />
+                Loop Selection
+              </label>
+            </div>
+
+            {/* Selection Helpers (Mark In, Mark Out, Clear) */}
+            <div className="flex items-center gap-1.5 bg-gray-950/40 p-1 rounded-md border border-gray-850">
+              <button
+                type="button"
+                onClick={() => {
+                  const newStart = Math.min(activePlayTime, editorEndTime);
+                  setEditorStartTime(newStart);
+                  if (wavesurferRef.current) {
+                    const ws = wavesurferRef.current;
+                    const regionsPlugin = ws.plugins[0];
+                    if (regionsPlugin) {
+                      regionsPlugin.clearRegions();
+                      regionsPlugin.addRegion({
+                        start: newStart,
+                        end: editorEndTime,
+                        color: 'rgba(255, 0, 85, 0.15)',
+                      });
+                    }
+                  }
+                  toast.success("Selection start set to playhead");
+                }}
+                className="h-8 px-2.5 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
+                title="Set selection start point to current playhead time"
+              >
+                <span className="text-pink-500 font-mono">[</span> Set Start
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  const newEnd = Math.max(activePlayTime, editorStartTime);
+                  setEditorEndTime(newEnd);
+                  if (wavesurferRef.current) {
+                    const ws = wavesurferRef.current;
+                    const regionsPlugin = ws.plugins[0];
+                    if (regionsPlugin) {
+                      regionsPlugin.clearRegions();
+                      regionsPlugin.addRegion({
+                        start: editorStartTime,
+                        end: newEnd,
+                        color: 'rgba(255, 0, 85, 0.15)',
+                      });
+                    }
+                  }
+                  toast.success("Selection end set to playhead");
+                }}
+                className="h-8 px-2.5 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
+                title="Set selection end point to current playhead time"
+              >
+                Set End <span className="text-pink-500 font-mono">]</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const totalDur = editorBuffer?.duration || duration || 30;
+                  setEditorStartTime(0);
+                  setEditorEndTime(totalDur);
+                  if (wavesurferRef.current) {
+                    const ws = wavesurferRef.current;
+                    const regionsPlugin = ws.plugins[0];
+                    if (regionsPlugin) {
+                      regionsPlugin.clearRegions();
+                    }
+                  }
+                  toast.success("Selection cleared (entire audio selected)");
+                }}
+                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-medium text-gray-400 hover:text-white transition-all"
+                title="Select entire audio timeline"
+              >
+                Clear Selection
+              </button>
+            </div>
+
+            {/* Zoom & Playback Speed Controls */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Zoom Slider */}
+              <div className="flex items-center gap-1.5 bg-gray-950/40 p-1.5 px-3 rounded-lg border border-gray-850">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Zoom</span>
+                <input
+                  type="range"
+                  min="10"
+                  max="150"
+                  value={editorZoom}
+                  onChange={(e) => handleZoomChange(parseInt(e.target.value))}
+                  className="h-1 w-20 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+              </div>
+
+              {/* Speed Controller Widget */}
+              <div className="flex items-center gap-2 bg-gray-950/40 border border-gray-850 rounded-lg p-1 px-2.5">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Speed:</span>
+                <button
+                  type="button"
+                  onClick={() => handleSpeedChange(Math.max(0.25, parseFloat((editorSpeed - 0.05).toFixed(2))))}
+                  className="h-6 w-6 flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white rounded text-xs font-bold transition-all"
+                  title="Decrease speed by 0.05"
+                >
+                  -
+                </button>
+                
+                <input
+                  type="number"
+                  value={editorSpeed}
+                  onChange={(e) => {
+                    const val = parseFloat(parseFloat(e.target.value).toFixed(2));
+                    if (!isNaN(val) && val >= 0.25 && val <= 3.0) {
+                      handleSpeedChange(val);
+                    }
+                  }}
+                  step="0.05"
+                  min="0.25"
+                  max="3.0"
+                  className="w-12 bg-gray-900 border border-gray-700 text-center rounded text-xs font-mono text-white py-0.5 focus:outline-none focus:border-pink-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                
+                <button
+                  type="button"
+                  onClick={() => handleSpeedChange(Math.min(3.0, parseFloat((editorSpeed + 0.05).toFixed(2))))}
+                  className="h-6 w-6 flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white rounded text-xs font-bold transition-all"
+                  title="Increase speed by 0.05"
+                >
+                  +
+                </button>
+                
+                <span className="text-[10px] text-gray-500 font-mono">x</span>
+                
+                <button
+                  type="button"
+                  onClick={() => handleSpeedChange(1.0)}
+                  className="text-[9px] bg-gray-800 hover:bg-gray-750 border border-gray-700 text-gray-300 font-semibold px-1.5 py-0.5 rounded transition-all ml-1"
+                  title="Reset to 1.0x Normal speed"
+                >
+                  Reset
+                </button>
+              </div>
+
+              {/* Playback Rate Range Slider */}
+              <div className="flex items-center gap-1.5 bg-gray-950/40 p-1.5 px-3 rounded-lg border border-gray-850">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-pink-500">Rate</span>
+                <input
+                  type="range"
+                  min="0.25"
+                  max="3.0"
+                  step="0.05"
+                  value={editorSpeed}
+                  onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
+                  className="h-1 w-20 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+              </div>
+
+            </div>
+          </div>
+
+          {/* Timeline Multi-Tracks */}
+          <div className="space-y-2 select-none overflow-x-auto relative p-2 bg-[#090d1a] rounded-lg border border-gray-850">
+            
+            {/* Timeline Ruler */}
+            <div className="flex items-center w-full min-w-[600px] border-b border-gray-800 pb-1 mb-1">
+              <div className="w-24 shrink-0 text-[9px] text-gray-500 font-bold uppercase tracking-wider pl-2">
+                <span>⏱️ Ruler</span>
+              </div>
+              <div 
+                className="flex-1 h-6 relative bg-gray-950/20 rounded-md border border-gray-850/30 cursor-ew-resize"
+                onClick={handleRulerClick}
+                title="Click anywhere to scrub playhead"
+              >
+                {Array.from({ length: 11 }, (_, idx) => {
+                  const totalDur = editorBuffer?.duration || duration || 30;
+                  const tickTime = (totalDur / 10) * idx;
+                  const leftPct = (idx / 10) * 100;
+                  return (
+                    <div 
+                      key={idx} 
+                      className="absolute top-0.5 transform -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                      style={{ left: `${leftPct}%` }}
+                    >
+                      <span className="text-[8px] text-gray-500 font-mono font-medium">{formatTime(tickTime)}</span>
+                      <div className="h-1 w-px bg-gray-700 mt-0.5" />
+                    </div>
+                  );
+                })}
+                {/* Ruler Playhead Handle Knob */}
+                {wavesurferRef.current && (
+                  <div 
+                    className="absolute -top-1 bottom-0 w-3 h-3 bg-indigo-500 rounded-full border border-white shadow-[0_0_8px_#6366f1] z-30 pointer-events-none transform -translate-x-1/2"
+                    style={{ 
+                      left: `${(activePlayTime / (wavesurferRef.current.getDuration() || 1)) * 100}%` 
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Track: Audio Waveform Track */}
+            <div className="flex items-center w-full min-w-[600px] py-1">
+              <div className="w-24 text-[10px] text-gray-500 font-bold uppercase tracking-wider shrink-0 flex items-center gap-1 pl-2">
+                <span>🔊 Waveform</span>
+              </div>
+              <div className="flex-1 bg-gray-950/50 rounded-md border border-gray-850/60 p-1 relative">
+                {/* Timeline vertical playhead line (Solid glow) */}
+                {wavesurferRef.current && (
+                  <div 
+                    className="absolute top-0 bottom-0 w-0.5 bg-indigo-500 z-20 pointer-events-none shadow-[0_0_8px_#6366f1]"
+                    style={{ 
+                      left: `${(activePlayTime / (wavesurferRef.current.getDuration() || 1)) * 100}%` 
+                    }}
+                  />
+                )}
+                <div ref={waveformRef} className="h-20" />
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Project Meta header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-800/80 pb-6">
+        <div>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => handleSaveProject(false)}
+            className="bg-transparent text-2xl font-bold text-white border-b border-transparent hover:border-gray-700 focus:border-indigo-500 focus:outline-none py-1 w-full max-w-lg"
+          />
+          <p className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5 mt-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+            Auto-save is active
+          </p>
+        </div>
+      </div>
+
+      {/* Grid container: Left Input + Transcript, Right AI Script + TTS */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Left Side: URL paste and Raw Transcript */}
+        <div className="space-y-6">
+          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded bg-red-500/10 text-red-500 text-xs font-bold">1</span>
+              Import Video transcript
+            </h3>
+            <div>
+              <label className="block text-xs text-gray-400 font-semibold mb-1 uppercase tracking-wider">YouTube URL</label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  className="flex-1 rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none text-sm"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                <button
+                  onClick={handleGenerateTranscript}
+                  disabled={generatingTranscript}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {generatingTranscript ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    'Extract'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Transcript editor container */}
+          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Original Transcript</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => copyToClipboard(transcript)}
+                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white transition-all"
+                  title="Copy Transcript"
+                >
+                  <ClipboardDocumentIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              onBlur={() => handleSaveProject(false)}
+              className="h-96 w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:outline-none resize-none font-sans"
+              placeholder="Paste or generate YouTube transcript here..."
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+              <span>{transcript.split(/\s+/).filter(Boolean).length} words</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <CustomSelect
+                  value={paraphraseLanguage}
+                  onChange={(e) => setParaphraseLanguage(e.target.value)}
+                  options={languageOptions}
+                  disabled={paraphrasing}
+                  className="w-32"
+                />
+                <button
+                  onClick={handleParaphrase}
+                  disabled={paraphrasing || !transcript}
+                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 transition-all"
+                >
+                  {paraphrasing ? (
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <>
+                      <SparklesIcon className="h-4 w-4" />
+                      Paraphrase
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: AI Rewrite & TTS Voiceover */}
+        <div className="space-y-6">
+          {/* AI script editor */}
+          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded bg-purple-500/10 text-purple-400 text-xs font-bold">2</span>
+                Paraphrased YouTube Script
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => copyToClipboard(activeTab === 'full' ? paraphrasedScript : voiceoverText)}
+                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white transition-all"
+                  title={activeTab === 'full' ? "Copy Paraphrased Script" : "Copy Voiceover Text"}
+                >
+                  <ClipboardDocumentIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Tab navigation */}
+            <div className="relative flex p-0.5 bg-gray-950/60 rounded-lg border border-gray-800/80">
+              {/* Sliding background highlight */}
+              <div 
+                className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md transition-transform duration-300 ease-out"
+                style={{
+                  transform: activeTab === 'full' ? 'translateX(0)' : 'translateX(100%)'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setActiveTab('full')}
+                className={`relative z-10 flex-1 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors duration-200 ${
+                  activeTab === 'full' ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <span className="sm:hidden">Full Script</span>
+                <span className="hidden sm:inline">Full Script (with Cues)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('voiceover')}
+                className={`relative z-10 flex-1 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors duration-200 ${
+                  activeTab === 'voiceover' ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <span className="sm:hidden">Voiceover Only</span>
+                <span className="hidden sm:inline">Voiceover Text (Speech-only)</span>
+              </button>
+            </div>
+
+            <div className="relative h-96 w-full overflow-hidden">
+              {paraphrasing ? (
+                <div className="absolute inset-0 z-20 rounded-lg border border-gray-800 bg-[#0d1222]/90 p-6 flex flex-col items-center justify-center space-y-6 backdrop-blur-sm">
+                  <div className="flex flex-col items-center space-y-2 text-center">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent shadow-[0_0_15px_rgba(99,102,241,0.3)]"></div>
+                    <span className="text-sm font-semibold text-gray-300 tracking-wide mt-2">{paraphraseStage}</span>
+                  </div>
+                  <div className="w-full max-w-md bg-gray-850 rounded-full h-3.5 relative overflow-hidden border border-gray-700 shadow-inner">
+                    <div 
+                      className="bg-gradient-to-r from-indigo-600 to-violet-600 h-full rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(99,102,241,0.4)]" 
+                      style={{ width: `${paraphraseProgress}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-400 font-mono">{paraphraseProgress}%</span>
+                </div>
+              ) : null}
+
+              {/* Full Script Tab content */}
+              <div 
+                className={`absolute inset-0 transition-[opacity,transform] duration-300 ease-out transform ${
+                  activeTab === 'full' 
+                    ? 'opacity-100 translate-x-0 pointer-events-auto' 
+                    : 'opacity-0 -translate-x-4 pointer-events-none'
+                }`}
+              >
+                <textarea
+                  value={paraphrasedScript}
+                  onChange={(e) => setParaphrasedScript(e.target.value)}
+                  onBlur={() => handleSaveProject(false)}
+                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans"
+                  placeholder="Mistral AI paraphrased script outputs will appear here..."
+                />
+              </div>
+
+              {/* Voiceover Only Tab content */}
+              <div 
+                className={`absolute inset-0 transition-[opacity,transform] duration-300 ease-out transform ${
+                  activeTab === 'voiceover' 
+                    ? 'opacity-100 translate-x-0 pointer-events-auto' 
+                    : 'opacity-0 translate-x-4 pointer-events-none'
+                }`}
+              >
+                <textarea
+                  value={voiceoverText}
+                  onChange={(e) => setVoiceoverText(e.target.value)}
+                  onBlur={() => handleSaveProject(false)}
+                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 pb-8 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans"
+                  placeholder="Cleaned voiceover text will appear here. You can edit this directly before generating audio."
+                />
+                <div className="absolute bottom-2 left-4 text-[10px] text-gray-500">
+                  * All stage directions, narrator tags, and formatting have been automatically cleaned.
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+              <span>
+                {activeTab === 'full' 
+                  ? `${paraphrasedScript.split(/\s+/).filter(Boolean).length} words` 
+                  : `${voiceoverText.split(/\s+/).filter(Boolean).length} words`
+                }
+              </span>
+              <button
+                onClick={handleGenerateVoiceover}
+                disabled={generatingVoice || (activeTab === 'full' ? !paraphrasedScript : !voiceoverText)}
+                className="flex items-center gap-2 rounded-lg bg-gray-850 border border-gray-700 px-4 py-2 text-xs font-bold text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                {generatingVoice ? (
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <>
+                    <SpeakerWaveIcon className="h-4 w-4" />
+                    Generate Voiceover
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Text-to-Speech audio controller */}
+          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-5">
+            <div className="border-b border-gray-800 pb-4">
+              <h3 className="text-lg font-semibold text-white mb-4">Voiceover Settings</h3>
+              
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Target Voice</label>
+                  <CustomSelect
+                    value={selectedVoice}
+                    onChange={(e) => setSelectedVoice(e.target.value)}
+                    options={voiceOptions}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Voice Style / Emotion</label>
+                  <CustomSelect
+                    value={selectedEmotion}
+                    onChange={(e) => setSelectedEmotion(e.target.value)}
+                    options={emotionOptions}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+          {/* Main Audio Preview (Most Recent) */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Latest Generation</h4>
+            {audioUrl ? (
+              <div className="flex flex-col gap-3 rounded-lg bg-gray-900/40 p-4 border border-gray-800">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <button
+                      onClick={togglePlay}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)] animate-pulse"
+                    >
+                      {isPlaying && currentlyPlayingUrl === audioUrl ? (
+                        <PauseIcon className="h-5 w-5 fill-current" />
+                      ) : (
+                        <PlayIcon className="h-5 w-5 fill-current ml-0.5" />
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold text-white truncate">
+                        {audioFiles.length > 0 ? audioFiles[0].name : "voiceover.mp3"}
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-gray-400 truncate">
+                        Voice: {selectedVoice.toUpperCase()} | Duration: {audioFiles.length > 0 ? audioFiles[0].duration || '0:00' : '0:00'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 self-end sm:self-center">
+                    <button
+                      onClick={() => enterAudioEditor(audioUrl, null)}
+                      className="rounded-lg bg-gray-850 p-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center gap-1.5"
+                      title="Open in Audio Wave Editor"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                      </svg>
+                    </button>
+                    <a
+                      href={audioUrl}
+                      download={audioFiles.length > 0 ? `${audioFiles[0].name}.mp3` : "voiceover.mp3"}
+                      className="rounded-lg bg-gray-800 p-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-all"
+                      title="Download Audio"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4" />
+                    </a>
+                  </div>
+                </div>
+                
+                {/* Timeline Scrubber */}
+                <div className="flex items-center gap-3 px-1 w-full">
+                  <span className="text-[10px] text-gray-400 font-mono w-8 text-right">
+                    {currentlyPlayingUrl === audioUrl ? formatTime(currentTime) : '0:00'}
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max={currentlyPlayingUrl === audioUrl ? duration || 100 : 100}
+                    value={currentlyPlayingUrl === audioUrl ? currentTime : 0}
+                    onChange={currentlyPlayingUrl === audioUrl ? handleSeek : undefined}
+                    disabled={currentlyPlayingUrl !== audioUrl}
+                    className="flex-1 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <span className="text-[10px] text-gray-400 font-mono w-8">
+                    {currentlyPlayingUrl === audioUrl ? formatTime(duration) : (audioFiles.length > 0 ? audioFiles[0].duration || '0:00' : '0:00')}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-lg bg-gray-950/20 py-8 border border-dashed border-gray-800 text-center">
+                <SpeakerWaveIcon className="h-8 w-8 text-gray-600 mb-2" />
+                <p className="text-xs text-gray-400">No voiceover generated yet.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Saved Audios Stack */}
+          <div className="space-y-3 pt-2">
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Saved Audios ({audioFiles.length})</h4>
+            {audioFiles.length > 0 ? (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {audioFiles.map((audio) => {
+                  const isAudioPlaying = isPlaying && currentlyPlayingUrl === audio.url;
+                  const isEditing = editingAudioId === audio.id;
+                  return (
+                    <div 
+                      key={audio.id}
+                      className={`flex flex-col gap-3 rounded-lg bg-gray-950/40 p-3 border transition-all ${
+                        isAudioPlaying ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-gray-850 hover:border-gray-800'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between w-full">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {/* Play / Pause */}
+                          <button
+                            onClick={() => togglePlayAudio(audio.url)}
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all ${
+                              isAudioPlaying 
+                                ? 'bg-gradient-to-tr from-indigo-600 to-violet-600 text-white' 
+                                : 'bg-gray-850 text-gray-300 hover:bg-gray-700 hover:text-white'
+                            }`}
+                          >
+                            {isAudioPlaying ? (
+                              <PauseIcon className="h-3.5 w-3.5 fill-current" />
+                            ) : (
+                              <PlayIcon className="h-3.5 w-3.5 fill-current ml-0.5" />
+                            )}
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            {isEditing ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={editingAudioName}
+                                  onChange={(e) => setEditingAudioName(e.target.value)}
+                                  className="bg-gray-900 text-xs text-white border border-indigo-500 rounded px-2 py-1 focus:outline-none w-full"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveRename(audio.id);
+                                    if (e.key === 'Escape') setEditingAudioId(null);
+                                  }}
+                                />
+                                <button
+                                  onClick={() => saveRename(audio.id)}
+                                  className="text-emerald-400 hover:text-emerald-300 text-xs font-semibold px-1.5 py-1"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingAudioId(null)}
+                                  className="text-gray-400 hover:text-gray-300 text-xs font-semibold px-1.5 py-1"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span 
+                                  className="text-xs font-semibold text-white truncate cursor-pointer hover:text-indigo-400 transition-colors"
+                                  onClick={() => startEditing(audio)}
+                                  title="Click to rename"
+                                >
+                                  {audio.name}
+                                </span>
+                                <span className="bg-gray-900/80 text-[9px] sm:text-[10px] text-gray-400 px-1 py-0.5 rounded font-mono border border-gray-800">
+                                  {audio.duration || '0:00'}
+                                </span>
+                              </div>
+                            )}
+                            <p className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">
+                              Voice: {(audio.voice || 'swara').toUpperCase()} | Generated: {audio.created_at ? new Date(audio.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Actions: Download & Delete */}
+                        <div className="flex items-center gap-1.5 self-end sm:self-center">
+                          <button
+                            onClick={() => enterAudioEditor(audio.url, audio)}
+                            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-all"
+                            title="Edit in Audio Wave Editor"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                            </svg>
+                          </button>
+                          <a
+                            href={audio.url}
+                            download={`${audio.name}.mp3`}
+                            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-all"
+                            title="Download Audio"
+                          >
+                            <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+                          </a>
+                          <button
+                            onClick={() => handleDeleteAudio(audio.id)}
+                            className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-950/20 rounded transition-all"
+                            title="Delete Audio"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Inline Timeline Scrubber for Saved Stack */}
+                      {isAudioPlaying && (
+                        <div className="flex items-center gap-3 px-1 pb-1 w-full animate-fadeIn">
+                          <span className="text-[10px] text-gray-400 font-mono w-8 text-right">
+                            {formatTime(currentTime)}
+                          </span>
+                          <input
+                            type="range"
+                            min="0"
+                            max={duration || 100}
+                            value={currentTime}
+                            onChange={handleSeek}
+                            className="flex-1 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-violet-500 transition-all"
+                          />
+                          <span className="text-[10px] text-gray-400 font-mono w-8">
+                            {formatTime(duration)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-xs text-gray-500 border border-dashed border-gray-800/80 rounded-lg">
+                No saved audios in stack.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  );
+};
+
+
+export default TranscriptGenerator;

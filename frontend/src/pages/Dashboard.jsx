@@ -1,0 +1,190 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import { toast } from 'react-hot-toast';
+import { 
+  PlusIcon, 
+  TrashIcon, 
+  ArrowRightIcon, 
+  VideoCameraIcon 
+} from '@heroicons/react/24/outline';
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+
+  // Fetch all user projects on mount
+  const fetchProjects = async () => {
+    try {
+      const res = await api.get('/projects');
+      setProjects(res.data);
+    } catch (err) {
+      toast.error('Failed to load projects');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
+    if (!newTitle.trim()) {
+      return toast.error('Project title is required');
+    }
+    
+    try {
+      const res = await api.post('/projects', { title: newTitle });
+      toast.success('Project created successfully!');
+      setIsModalOpen(false);
+      setNewTitle('');
+      // Redirect to the transcript page for this project
+      navigate(`/transcript?project=${res.data.id}`);
+    } catch (err) {
+      toast.error('Failed to create project');
+    }
+  };
+
+  const handleDeleteProject = async (id, e) => {
+    e.stopPropagation(); // Avoid triggering card click
+    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    
+    try {
+      await api.delete(`/projects/${id}`);
+      toast.success('Project deleted successfully');
+      setProjects(projects.filter(p => p.id !== id));
+    } catch (err) {
+      toast.error('Failed to delete project');
+    }
+  };
+
+  const handleProjectClick = (project) => {
+    // Navigate directly to transcript page for this project
+    navigate(`/transcript?project=${project.id}`);
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header section with Create New Button */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-3xl font-extrabold text-white">Your Workspace</h2>
+          <p className="mt-1 text-sm text-gray-400">Manage, create, and refine your YouTube scripts and scene plans.</p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-550/10 hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 w-full sm:w-auto shrink-0"
+        >
+          <PlusIcon className="h-5 w-5" />
+          New Project
+        </button>
+      </div>
+
+      {/* Projects List grid layout */}
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-800 bg-[#0d1222]/30 py-24 text-center">
+          <VideoCameraIcon className="h-16 w-16 text-gray-600 mb-4" />
+          <h3 className="text-xl font-bold text-white">No projects found</h3>
+          <p className="mt-1 text-sm text-gray-400 max-w-xs">Create your first script studio project and start generating content.</p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="mt-6 flex items-center gap-2 rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition-all"
+          >
+            Create Project
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <div
+              key={project.id}
+              onClick={() => handleProjectClick(project)}
+              className="group relative cursor-pointer rounded-xl border border-gray-800/80 bg-[#0d1222]/80 p-3.5 sm:p-6 transition-all duration-300 hover:border-indigo-500/40 hover:bg-[#11172a] hover:shadow-xl hover:-translate-y-1 min-w-0"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-white transition-all">
+                  <VideoCameraIcon className="h-4 w-4 sm:h-6 sm:w-6" />
+                </div>
+                <button
+                  onClick={(e) => handleDeleteProject(project.id, e)}
+                  className="rounded-lg p-1 text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all"
+                  title="Delete Project"
+                >
+                  <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+              </div>
+
+              <div className="mt-3 sm:mt-4">
+                <h3 className="truncate text-sm sm:text-lg font-bold text-white group-hover:text-indigo-400 transition-all">
+                  {project.title}
+                </h3>
+                <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs text-gray-400">
+                  {project.youtube_url ? project.youtube_url : 'No YouTube Link'}
+                </p>
+              </div>
+
+              <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:items-center justify-between border-t border-gray-800/60 pt-3 sm:pt-4 text-[10px] sm:text-xs text-gray-450">
+                <span className="truncate">Updated {new Date(project.updated_at).toLocaleDateString()}</span>
+                <span className="flex items-center gap-1 font-semibold text-indigo-400 group-hover:translate-x-1 transition-transform self-end sm:self-auto">
+                  Open
+                  <ArrowRightIcon className="h-3 w-3" />
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border border-gray-800 bg-[#0d1222] p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Create New Project</h3>
+            <form onSubmit={handleCreateProject} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Project Title</label>
+                <input
+                  type="text"
+                  required
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  placeholder="My YouTube Video Script"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setNewTitle('');
+                  }}
+                  className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white hover:from-indigo-500 hover:to-violet-500"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;
