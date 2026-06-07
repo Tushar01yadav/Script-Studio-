@@ -63,39 +63,62 @@ const cleanScriptForTTS = (text) => {
   let cleaned = text;
   
   // 1. Remove "Why This Works" analysis sections and everything after it
-  const whyWorksIndex = cleaned.search(/(\n|^)(#*\s*(🎯\s*)?Why\s+(this\s+)?(script\s+)?works\??)/i);
+  const whyWorksIndex = cleaned.search(/(\n|^)(#*\s*(🎯\s*)?Why\s+(this\s+)?(script\s+)?works\??|#*\s*(🎯\s*)?निष्कर्ष|#*\s*(🎯\s*)?विशेषताएं|#*\s*(🎯\s*)?महत्वपूर्ण)/i);
   if (whyWorksIndex !== -1) {
     cleaned = cleaned.substring(0, whyWorksIndex);
   }
 
-  // 2. Remove markdown horizontal rules (e.g. ---, ***)
-  cleaned = cleaned.replace(/^\s*[-*_]{3,}\s*$/gm, '');
-  
-  // 3. Remove title headers (e.g. 🎥 YouTube Narration Script: ... or 🎬 YouTube Narration Script 🎬)
-  // This matches lines containing "YouTube Narration Script" or just "Narration Script" (case-insensitive)
-  cleaned = cleaned.replace(/^.*Narrat(ion)?\s*Script.*$/gim, '');
+  // Split into lines for detailed processing
+  const lines = cleaned.split('\n');
+  const processedLines = [];
 
-  // 4. Remove lines that are just headers or section names (like **[🎬 HOOK – 0:00 to 0:15]** or [🎬 HOOK])
-  cleaned = cleaned.replace(/^\*\*\[.*\]\*\*$/gm, '');
-  cleaned = cleaned.replace(/^\[.*\]$/gm, '');
-  cleaned = cleaned.replace(/^\*\*.*:\s*.*$/gm, '');
-  
-  // 5. Remove speaker labels like **NARRATOR (emotional, intense):** or NARRATOR:
-  cleaned = cleaned.replace(/^\*\*?[A-Z0-9a-z_ ]+(\([^)]*\))?:\*\*?/gm, '');
-  cleaned = cleaned.replace(/^[A-Z0-9a-z_ ]+(\([^)]*\))?:/gm, '');
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
 
-  // 6. Remove parenthetical stage directions or audio cues, e.g. "(Dramatic music...)" or [Sound effect]
-  cleaned = cleaned.replace(/\([^)]*\)/g, '');
-  cleaned = cleaned.replace(/\[[^\]]*\]/g, '');
-  cleaned = cleaned.replace(/\*/g, '');
-  
-  // Clean up extra white spaces/newlines
-  cleaned = cleaned.split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .join('\n');
-    
-  return cleaned;
+    // Remove markdown headers entirely (e.g. ###, ## Hook)
+    if (line.startsWith('#')) {
+      continue;
+    }
+
+    // Remove lines explaining stage directions or shot descriptions, e.g. [Scene 1: ...] or [Camera cut to...]
+    if (line.startsWith('[') && line.endsWith(']')) {
+      continue;
+    }
+
+    // Detect if the line starts with a non-text meta symbol/emoji (excluding quotes, letters, numbers, and basic punctuation)
+    const isMetaLine = /^[^\w\s\d'\"“”‘’«»「」『』\(\)\[\]\{\}\.,!:\?;\-\u0900-\u097F\u0964\u0965\u2014\u2013\u2026]/u.test(line);
+    if (isMetaLine) {
+      continue; // Skip the entire checklist/comment line!
+    }
+
+    // Strip stage directions in parentheses or brackets within the line, e.g. "(Dramatic music...)"
+    line = line.replace(/\([^)]*\)/g, '');
+    line = line.replace(/\[[^\]]*\]/g, '');
+
+    // Strip list bullet symbols at the beginning (e.g. - or * or numbers followed by dot/parenthesis)
+    line = line.replace(/^[-*•+]+\s*/, '');
+    line = line.replace(/^\d+[\s\.)-]+\s*/, '');
+
+    // Strip emojis completely from the spoken text
+    line = line.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu, '');
+    try {
+      line = line.replace(/\p{Extended_Pictographic}/gu, '');
+    } catch (e) {}
+
+    // Strip outer quotes (both single, double, curly, and Hindi-style) from the line
+    line = line.replace(/^['"“”‘«「\s]+|['"“”’»」\s]+$/g, '');
+
+    // Strip markdown symbols like ** or *
+    line = line.replace(/\*/g, '');
+
+    line = line.trim();
+    if (line) {
+      processedLines.push(line);
+    }
+  }
+
+  return processedLines.join('\n');
 };
 
 const normalizeScenes = (scenesList) => {
@@ -609,7 +632,7 @@ const TranscriptGenerator = () => {
         emotion: selectedEmotion
       });
       
-      const segmentUrl = `http://localhost:8000${res.data.audio_url}`;
+      const segmentUrl = `${api.defaults.baseURL}${res.data.audio_url}`;
       
       const segmentResponse = await fetch(segmentUrl);
       const segmentArrayBuffer = await segmentResponse.arrayBuffer();
@@ -650,7 +673,7 @@ const TranscriptGenerator = () => {
         }
       });
       
-      const newUrl = `http://localhost:8000${uploadRes.data.audio_url}`;
+      const newUrl = `${api.defaults.baseURL}${uploadRes.data.audio_url}`;
       const durationSec = uploadRes.data.duration;
       
       let durationStr = '0:00';
@@ -1001,7 +1024,7 @@ const TranscriptGenerator = () => {
         voice: selectedVoice,
         emotion: selectedEmotion
       });
-      const url = `http://localhost:8000${res.data.audio_url}`;
+      const url = `${api.defaults.baseURL}${res.data.audio_url}`;
       const durationSec = res.data.duration;
       
       let durationStr = '0:00';
