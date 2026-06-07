@@ -87,7 +87,7 @@ const cleanScriptForTTS = (text) => {
     }
 
     // Detect if the line starts with a non-text meta symbol/emoji (excluding quotes, letters, numbers, and basic punctuation)
-    const isMetaLine = /^[^\w\s\d'"“”‘’«»「」『』()[\]{}.,!:?;\-\u0900-\u097F\u0964\u0965\u2014\u2013\u2026]/u.test(line);
+    const isMetaLine = /^[^\w\s\d'\u0022\u201C\u201D\u2018\u2019\u00AB\u00BB\u300A\u300B\u300E\u300F()\[\]{}.,!:?;\u002D\u0900-\u097F\u0964\u0965\u2014\u2013\u2026]/u.test(line);
     if (isMetaLine) {
       continue; // Skip the entire checklist/comment line!
     }
