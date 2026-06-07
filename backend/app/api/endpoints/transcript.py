@@ -7,6 +7,32 @@ from app.models.user import User
 
 router = APIRouter()
 
+def deduplicate_transcript(text: str) -> str:
+    """
+    Remove consecutive repeated sentences from YouTube auto-caption text.
+    YouTube often emits the same phrase 2-3 times in successive segments.
+    """
+    if not text:
+        return text
+
+    # Split into sentences on common sentence-ending punctuation
+    sentences = re.split(r'(?<=[।.!?])\s+', text)
+
+    deduped = []
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        # Skip if it's identical (or nearly identical) to the last added sentence
+        if deduped and sentence == deduped[-1]:
+            continue
+        # Also skip if the last 2 sentences were both this sentence (triple repeat)
+        if len(deduped) >= 2 and sentence == deduped[-2] and sentence == deduped[-1]:
+            continue
+        deduped.append(sentence)
+
+    return ' '.join(deduped)
+
 class TranscriptRequest(BaseModel):
     url: str
 
@@ -43,7 +69,8 @@ def generate_transcript(payload: TranscriptRequest, current_user: User = Depends
             transcript_obj = next(iter(transcript_list))
             
         fetched_lines = transcript_obj.fetch()
-        full_transcript = " ".join([entry.text for entry in fetched_lines])
+        raw_transcript = " ".join([entry.text for entry in fetched_lines])
+        full_transcript = deduplicate_transcript(raw_transcript)
         return TranscriptResponse(video_id=video_id, transcript=full_transcript)
     except TranscriptsDisabled:
         raise HTTPException(
@@ -85,7 +112,7 @@ def generate_transcript(payload: TranscriptRequest, current_user: User = Depends
                     if line:
                         transcript_lines.append(line)
                 
-                full_transcript = " ".join(transcript_lines)
+                full_transcript = deduplicate_transcript(" ".join(transcript_lines))
                 if full_transcript:
                     return TranscriptResponse(video_id=video_id, transcript=full_transcript)
         except Exception as fallback_error:
