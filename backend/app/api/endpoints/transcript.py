@@ -56,6 +56,8 @@ def generate_transcript(payload: TranscriptRequest, current_user: User = Depends
             detail="No transcript was found for this video."
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while fetching the transcript: {str(e)}"
