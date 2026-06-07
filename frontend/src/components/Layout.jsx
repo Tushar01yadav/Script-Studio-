@@ -97,7 +97,7 @@ const Layout = ({ children }) => {
     { name: 'Settings', path: '/settings', icon: Cog6ToothIcon },
   ];
 
-  if (window.self === window.top) {
+  if (!isMobile && window.self === window.top) {
     navItems.push({ name: 'Mobile Simulator', path: '/mobile-simulator', icon: DevicePhoneMobileIcon });
   }
 
