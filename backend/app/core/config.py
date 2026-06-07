@@ -20,7 +20,10 @@ class Settings:
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./script_studio.db")
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./script_studio.db")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL: str = db_url
     AUDIO_STORAGE_PATH: str = os.getenv("AUDIO_STORAGE_PATH", "static/audio")
 
 settings = Settings()
