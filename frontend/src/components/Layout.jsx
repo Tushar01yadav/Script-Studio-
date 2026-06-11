@@ -215,12 +215,7 @@ const Layout = ({ children }) => {
               {navItems.find((item) => item.path === location.pathname)?.name || 'Studio Dashboard'}
             </h1>
           </div>
-          {user && !user.is_verified && (
-            <div className="flex items-center gap-2 rounded-full bg-yellow-500/10 border border-yellow-500/30 px-3 md:px-4 py-1.5 text-[10px] md:text-xs text-yellow-400 truncate max-w-[120px] sm:max-w-none">
-              <span className="h-2 w-2 rounded-full bg-yellow-400 animate-ping shrink-0"></span>
-              <span className="truncate">Verify email</span>
-            </div>
-          )}
+
         </header>
 
         {/* Body content wrapper */}

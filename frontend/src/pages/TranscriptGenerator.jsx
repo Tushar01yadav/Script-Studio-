@@ -1290,7 +1290,8 @@ const TranscriptGenerator = () => {
                   <textarea
                     value={editorTextSegment}
                     onChange={(e) => setEditorTextSegment(e.target.value)}
-                    className="w-full h-16 lg:h-24 rounded-lg border border-gray-700 bg-gray-900/60 p-3 text-xs text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none resize-none font-sans"
+                    translate="no"
+                    className="w-full h-16 lg:h-24 rounded-lg border border-gray-700 bg-gray-900/60 p-3 text-xs text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none resize-none font-sans notranslate"
                     placeholder="Enter segment script replacement..."
                   />
                   <button
@@ -1676,7 +1677,8 @@ const TranscriptGenerator = () => {
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
               onBlur={() => handleSaveProject(false)}
-              className="h-96 w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:outline-none resize-none font-sans"
+              translate="no"
+              className="h-96 w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:outline-none resize-none font-sans notranslate"
               placeholder="Paste or generate YouTube transcript here..."
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
@@ -1788,7 +1790,8 @@ const TranscriptGenerator = () => {
                   value={paraphrasedScript}
                   onChange={(e) => setParaphrasedScript(e.target.value)}
                   onBlur={() => handleSaveProject(false)}
-                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans"
+                  translate="no"
+                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans notranslate"
                   placeholder="Mistral AI paraphrased script outputs will appear here..."
                 />
               </div>
@@ -1805,7 +1808,8 @@ const TranscriptGenerator = () => {
                   value={voiceoverText}
                   onChange={(e) => setVoiceoverText(e.target.value)}
                   onBlur={() => handleSaveProject(false)}
-                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 pb-8 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans"
+                  translate="no"
+                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 pb-8 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans notranslate"
                   placeholder="Cleaned voiceover text will appear here. You can edit this directly before generating audio."
                 />
                 <div className="absolute bottom-2 left-4 text-[10px] text-gray-500">
