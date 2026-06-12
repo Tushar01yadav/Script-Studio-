@@ -9,29 +9,38 @@ router = APIRouter()
 
 def deduplicate_transcript(text: str) -> str:
     """
-    Remove consecutive repeated sentences from YouTube auto-caption text.
+    Remove consecutive repeated sentences or word sequences from YouTube auto-caption text.
     YouTube often emits the same phrase 2-3 times in successive segments.
     """
     if not text:
         return text
 
-    # Split into sentences on common sentence-ending punctuation
-    sentences = re.split(r'(?<=[।.!?])\s+', text)
+    # First, normalize whitespace
+    normalized_text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Split into words
+    words = normalized_text.split()
+    n = len(words)
+    if n < 2:
+        return normalized_text
 
-    deduped = []
-    for sentence in sentences:
-        sentence = sentence.strip()
-        if not sentence:
-            continue
-        # Skip if it's identical (or nearly identical) to the last added sentence
-        if deduped and sentence == deduped[-1]:
-            continue
-        # Also skip if the last 2 sentences were both this sentence (triple repeat)
-        if len(deduped) >= 2 and sentence == deduped[-2] and sentence == deduped[-1]:
-            continue
-        deduped.append(sentence)
+    # Remove consecutive repeating sequences of words of length k (from 1 up to 15 words)
+    # E.g. "hello world hello world" -> "hello world"
+    i = 0
+    while i < len(words):
+        deduped_any = False
+        for k in range(1, 16):
+            if i + 2 * k <= len(words):
+                seq1 = words[i : i + k]
+                seq2 = words[i + k : i + 2 * k]
+                if seq1 == seq2:
+                    del words[i + k : i + 2 * k]
+                    deduped_any = True
+                    break
+        if not deduped_any:
+            i += 1
 
-    return ' '.join(deduped)
+    return ' '.join(words)
 
 class TranscriptRequest(BaseModel):
     url: str

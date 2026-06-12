@@ -1,20 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { 
   PlusIcon, 
   TrashIcon, 
   ArrowRightIcon, 
-  VideoCameraIcon 
+  VideoCameraIcon,
+  CheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  
+  // Admin-only state
+  const [activeTab, setActiveTab] = useState('projects');
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   // Fetch all user projects on mount
   const fetchProjects = async () => {
@@ -28,9 +37,45 @@ const Dashboard = () => {
     }
   };
 
+  const fetchRequests = async () => {
+    setRequestsLoading(true);
+    try {
+      const res = await api.get('/auth/admin/requests');
+      setRequests(res.data);
+    } catch (err) {
+      toast.error('Failed to load access requests');
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
-  }, []);
+    if (user && user.email === 'admin@scriptstudio.com') {
+      fetchRequests();
+    }
+  }, [user]);
+
+  const handleApproveRequest = async (id) => {
+    try {
+      await api.post(`/auth/admin/requests/${id}/approve`);
+      toast.success('User access request approved!');
+      setRequests(requests.filter(r => r.id !== id));
+    } catch (err) {
+      toast.error('Failed to approve user');
+    }
+  };
+
+  const handleRejectRequest = async (id) => {
+    if (!window.confirm('Are you sure you want to reject and remove this request?')) return;
+    try {
+      await api.post(`/auth/admin/requests/${id}/reject`);
+      toast.success('User access request rejected!');
+      setRequests(requests.filter(r => r.id !== id));
+    } catch (err) {
+      toast.error('Failed to reject user');
+    }
+  };
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
@@ -85,63 +130,151 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* Projects List grid layout */}
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-        </div>
-      ) : projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-800 bg-[#0d1222]/30 py-24 text-center">
-          <VideoCameraIcon className="h-16 w-16 text-gray-600 mb-4" />
-          <h3 className="text-xl font-bold text-white">No projects found</h3>
-          <p className="mt-1 text-sm text-gray-400 max-w-xs">Create your first script studio project and start generating content.</p>
+      {/* Admin Tab Switcher */}
+      {user && user.email === 'admin@scriptstudio.com' && (
+        <div className="flex border-b border-gray-800">
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="mt-6 flex items-center gap-2 rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition-all"
+            onClick={() => setActiveTab('projects')}
+            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'projects'
+                ? 'border-indigo-500 text-white font-extrabold'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
           >
-            Create Project
+            Projects
+          </button>
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'requests'
+                ? 'border-indigo-500 text-white font-extrabold'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            Access Requests
+            {requests.length > 0 && (
+              <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-bold text-red-400 border border-red-500/30">
+                {requests.length}
+              </span>
+            )}
           </button>
         </div>
+      )}
+
+      {/* Conditional rendering based on active tab */}
+      {activeTab === 'requests' ? (
+        requestsLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+          </div>
+        ) : requests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-800 bg-[#0d1222]/30 py-24 text-center">
+            <CheckIcon className="h-12 w-12 text-emerald-500 mb-4" />
+            <h3 className="text-xl font-bold text-white">No pending requests</h3>
+            <p className="mt-1 text-sm text-gray-400 max-w-xs">All Google sign-ins have been approved or processed.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-gray-800 bg-[#0d1222]/80">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-800 text-xs font-bold uppercase tracking-wider text-gray-400 bg-gray-950/20">
+                  <th className="p-4 sm:p-6">Name</th>
+                  <th className="p-4 sm:p-6">Email Address</th>
+                  <th className="p-4 sm:p-6">Requested At</th>
+                  <th className="p-4 sm:p-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800/60 text-sm text-gray-300">
+                {requests.map((req) => (
+                  <tr key={req.id} className="hover:bg-gray-800/10 transition-colors">
+                    <td className="p-4 sm:p-6 font-semibold text-white">{req.name}</td>
+                    <td className="p-4 sm:p-6 font-mono text-xs">{req.email}</td>
+                    <td className="p-4 sm:p-6 text-gray-400">
+                      {new Date(req.created_at).toLocaleDateString()} {new Date(req.created_at).toLocaleTimeString()}
+                    </td>
+                    <td className="p-4 sm:p-6 text-right">
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => handleApproveRequest(req.id)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 cursor-pointer transition-all animate-pulse"
+                          title="Approve User Access"
+                        >
+                          <CheckIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleRejectRequest(req.id)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 cursor-pointer transition-all"
+                          title="Reject/Remove Request"
+                        >
+                          <XMarkIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              onClick={() => handleProjectClick(project)}
-              className="group relative cursor-pointer rounded-xl border border-gray-800/80 bg-[#0d1222]/80 p-3.5 sm:p-6 transition-all duration-300 hover:border-indigo-500/40 hover:bg-[#11172a] hover:shadow-xl hover:-translate-y-1 min-w-0"
+        /* Projects List grid layout */
+        loading ? (
+          <div className="flex justify-center py-20">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-800 bg-[#0d1222]/30 py-24 text-center">
+            <VideoCameraIcon className="h-16 w-16 text-gray-600 mb-4" />
+            <h3 className="text-xl font-bold text-white">No projects found</h3>
+            <p className="mt-1 text-sm text-gray-400 max-w-xs">Create your first script studio project and start generating content.</p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="mt-6 flex items-center gap-2 rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition-all cursor-pointer"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-white transition-all">
-                  <VideoCameraIcon className="h-4 w-4 sm:h-6 sm:w-6" />
+              Create Project
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                onClick={() => handleProjectClick(project)}
+                className="group relative cursor-pointer rounded-xl border border-gray-800/80 bg-[#0d1222]/80 p-3.5 sm:p-6 transition-all duration-300 hover:border-indigo-500/40 hover:bg-[#11172a] hover:shadow-xl hover:-translate-y-1 min-w-0"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-white transition-all">
+                    <VideoCameraIcon className="h-4 w-4 sm:h-6 sm:w-6" />
+                  </div>
+                  <button
+                    onClick={(e) => handleDeleteProject(project.id, e)}
+                    className="rounded-lg p-1 text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all cursor-pointer"
+                    title="Delete Project"
+                  >
+                    <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => handleDeleteProject(project.id, e)}
-                  className="rounded-lg p-1 text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all"
-                  title="Delete Project"
-                >
-                  <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
-              </div>
 
-              <div className="mt-3 sm:mt-4">
-                <h3 className="truncate text-sm sm:text-lg font-bold text-white group-hover:text-indigo-400 transition-all">
-                  {project.title}
-                </h3>
-                <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs text-gray-400">
-                  {project.youtube_url ? project.youtube_url : 'No YouTube Link'}
-                </p>
-              </div>
+                <div className="mt-3 sm:mt-4">
+                  <h3 className="truncate text-sm sm:text-lg font-bold text-white group-hover:text-indigo-400 transition-all">
+                    {project.title}
+                  </h3>
+                  <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs text-gray-400">
+                    {project.youtube_url ? project.youtube_url : 'No YouTube Link'}
+                  </p>
+                </div>
 
-              <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:items-center justify-between border-t border-gray-800/60 pt-3 sm:pt-4 text-[10px] sm:text-xs text-gray-450">
-                <span className="truncate">Updated {new Date(project.updated_at).toLocaleDateString()}</span>
-                <span className="flex items-center gap-1 font-semibold text-indigo-400 group-hover:translate-x-1 transition-transform self-end sm:self-auto">
-                  Open
-                  <ArrowRightIcon className="h-3 w-3" />
-                </span>
+                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:items-center justify-between border-t border-gray-800/60 pt-3 sm:pt-4 text-[10px] sm:text-xs text-gray-455">
+                  <span className="truncate">Updated {new Date(project.updated_at).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1 font-semibold text-indigo-400 group-hover:translate-x-1 transition-transform self-end sm:self-auto">
+                    Open
+                    <ArrowRightIcon className="h-3 w-3" />
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )
       )}
 
       {/* Create Modal */}

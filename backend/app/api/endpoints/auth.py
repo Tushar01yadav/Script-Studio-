@@ -1,5 +1,7 @@
 import datetime
 import uuid
+import httpx
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -157,3 +159,136 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
+
+class GoogleLoginRequest(BaseModel):
+    credential: str
+
+@router.post("/google-login")
+async def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://oauth2.googleapis.com/tokeninfo?id_token={payload.credential}"
+            )
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid Google credential"
+                )
+            token_info = response.json()
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to verify Google token: {str(e)}"
+        )
+
+    email = token_info.get("email")
+    name = token_info.get("name") or token_info.get("given_name") or "Google User"
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email not provided by Google account"
+        )
+
+    # Check if user exists
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        # Create a new user with is_approved=False
+        user = User(
+            name=name,
+            email=email,
+            password_hash=get_password_hash(str(uuid.uuid4())),
+            is_verified=True,
+            is_approved=False,
+            verification_token=None
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access request submitted. Please wait for admin approval."
+        )
+
+    if not user.is_approved and user.email != "admin@scriptstudio.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your access request is pending approval."
+        )
+
+    # Generate tokens
+    access_token = create_access_token(subject=user.id)
+    refresh_token = create_refresh_token(subject=user.id)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+from app.api.deps import get_current_user
+
+@router.get("/admin/requests")
+def get_pending_requests(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.email != "admin@scriptstudio.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can access this resource"
+        )
+    
+    pending_users = db.query(User).filter(User.is_approved == False).all()
+    return pending_users
+
+@router.post("/admin/requests/{user_id}/approve")
+def approve_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.email != "admin@scriptstudio.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can access this resource"
+        )
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+        
+    user.is_approved = True
+    db.commit()
+    return {"message": f"User {user.email} approved successfully"}
+
+@router.post("/admin/requests/{user_id}/reject")
+def reject_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.email != "admin@scriptstudio.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can access this resource"
+        )
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+        
+    db.delete(user)
+    db.commit()
+    return {"message": f"User {user.email} rejected/removed successfully"}

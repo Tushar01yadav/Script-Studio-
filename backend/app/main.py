@@ -9,6 +9,20 @@ from app.api.api import api_router
 # Initialize database tables on startup
 Base.metadata.create_all(bind=engine)
 
+def run_db_migrations():
+    from app.core.database import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    try:
+        db.execute(text("ALTER TABLE users ADD COLUMN is_approved BOOLEAN DEFAULT TRUE"))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+    finally:
+        db.close()
+
+run_db_migrations()
+
 # Create static audio folder
 os.makedirs(os.path.join("static", "audio"), exist_ok=True)
 

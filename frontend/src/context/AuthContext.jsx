@@ -65,6 +65,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (credential) => {
+    setLoading(true);
+    try {
+      const res = await api.post('/auth/google-login', { credential });
+      const { access_token, refresh_token } = res.data;
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
+      
+      const userRes = await api.get('/settings/me');
+      setUser(userRes.data);
+      return userRes.data;
+    } catch (err) {
+      setUser(null);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const register = async (name, email, password) => {
     setLoading(true);
     try {
@@ -120,6 +139,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         serverWaking,
         login,
+        loginWithGoogle,
         register,
         verifyEmail,
         forgotPassword,

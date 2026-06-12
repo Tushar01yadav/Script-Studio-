@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -15,6 +15,44 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const from = location.state?.from?.pathname || '/';
+
+  const handleGoogleCredentialResponse = async (response) => {
+    setLoading(true);
+    try {
+      await loginWithGoogle(response.credential);
+      toast.success('Successfully logged in with Google!');
+      navigate(from, { replace: true });
+    } catch (err) {
+      const errMsg = err.response?.data?.detail || 'Google authentication failed';
+      toast.error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const initializeGoogleSignIn = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "1030247740963-hlb527q5tm8i4uium8mhkbvl5j0nmun2.apps.googleusercontent.com",
+          callback: handleGoogleCredentialResponse,
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById("googleBtn"),
+          { theme: "outline", size: "large", width: "100%", text: "continue_with" }
+        );
+      }
+    };
+
+    const timer = setInterval(() => {
+      if (window.google) {
+        initializeGoogleSignIn();
+        clearInterval(timer);
+      }
+    }, 500);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,6 +164,19 @@ const Login = () => {
                 'Sign In'
               )}
             </button>
+          </div>
+
+          <div className="relative my-6 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-800"></div>
+            </div>
+            <span className="relative bg-[#0d1222]/80 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider backdrop-blur-md">
+              Or
+            </span>
+          </div>
+
+          <div className="flex justify-center">
+            <div id="googleBtn" className="w-full min-h-[44px]"></div>
           </div>
         </form>
       </div>

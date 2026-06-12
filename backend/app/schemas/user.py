@@ -21,6 +21,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_verified: bool
+    is_approved: bool
     created_at: datetime.datetime
 
     class Config:
