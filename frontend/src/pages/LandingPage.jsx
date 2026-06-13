@@ -234,7 +234,7 @@ const LandingPage = () => {
       </motion.nav>
 
       {/* ── Hero Section ─────────────────────── */}
-      <section className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-4 pt-8 pb-16">
+      <section className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-4 pt-16 sm:pt-12 md:pt-8 pb-16">
 
 
 
