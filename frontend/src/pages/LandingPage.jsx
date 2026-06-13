@@ -236,19 +236,7 @@ const LandingPage = () => {
       {/* ── Hero Section ─────────────────────── */}
       <section className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-4 pt-8 pb-16">
 
-        {/* Label above logo */}
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="mb-8 flex items-center justify-center text-xs font-semibold uppercase tracking-[0.2em] text-gray-500"
-        >
-          <span className="relative flex h-2 w-2 mr-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          AI-Powered YouTube Script Generator
-        </motion.p>
+
 
         {/* 3D Revolving YouTube Logo & Growth Arrow Background */}
         <motion.div
