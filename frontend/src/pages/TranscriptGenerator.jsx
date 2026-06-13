@@ -427,6 +427,10 @@ const TranscriptGenerator = () => {
   };
 
   const fetchAndDecodeAudio = async (url) => {
+    if (!url) {
+      toast.error("Failed to load audio data for editing.");
+      return;
+    }
     setEditorLoading(true);
     try {
       const response = await fetch(url);
@@ -742,6 +746,7 @@ const TranscriptGenerator = () => {
       barGap: 3,
       responsive: true,
       height: 80,
+      crossOrigin: 'anonymous',
     });
 
     wavesurferRef.current = ws;
