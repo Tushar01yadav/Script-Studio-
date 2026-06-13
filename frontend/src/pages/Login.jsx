@@ -237,7 +237,7 @@ const Login = () => {
             {/* Real GIS button, transparent overlay */}
             <div
               id="googleBtn"
-              className="absolute inset-0 z-10 w-full h-full opacity-[0.01] [&>div]:!w-full [&_iframe]:!w-full [&_iframe]:!rounded-lg cursor-pointer"
+              className="absolute inset-0 z-10 w-full h-full opacity-[0.01] overflow-hidden cursor-pointer"
             />
           </div>
         </form>
