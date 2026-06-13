@@ -461,7 +461,7 @@ const LandingPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.6, ease: 'easeOut' }}
-          className="mt-8 text-lg md:text-xl text-gray-400 max-w-2xl leading-relaxed"
+          className="mt-6 text-sm sm:text-base md:text-lg text-gray-400 max-w-xl leading-relaxed px-4"
         >
           Generate polished scripts, break them into cinematic scenes, and synthesize professional voiceovers — all in one beautiful workspace.
         </motion.p>
