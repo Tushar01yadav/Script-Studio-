@@ -1162,11 +1162,11 @@ const TranscriptGenerator = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-800 pb-4">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold">🎬</span>
-              Video & Storyboard Editor
+              <span className="flex h-6 w-6 items-center justify-center rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold">🔊</span>
+              Audio Wave Editor
             </h2>
             <p className="text-xs text-gray-400 mt-1">
-              Editing: <span className="text-indigo-400 font-semibold">{editorAudioItem ? editorAudioItem.name : "Latest Voiceover"}</span> | Video & Audio Timeline Sync
+              Editing: <span className="text-indigo-400 font-semibold">{editorAudioItem ? editorAudioItem.name : "Latest Voiceover"}</span> | Precise Timeline Splicing & Speed Controls
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -1194,42 +1194,17 @@ const TranscriptGenerator = () => {
         {/* Workspace: Preview Player & Properties Inspector */}
         <div className="grid gap-6 lg:grid-cols-3">
           
-          {/* Left: Video Preview Player (2/3 Width) */}
+          {/* Left: Audio Waveform Visualizer & Oscilloscope (2/3 Width) */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Video Preview</h3>
-            <div className="relative aspect-video w-full rounded-xl bg-black border border-gray-800/80 flex flex-col items-center justify-center overflow-hidden group shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              {/* Storyboard Image Slideshow */}
-              {activeScene && activeScene.generated_image_url ? (
-                <img 
-                  src={activeScene.generated_image_url} 
-                  alt={`Scene ${activeScene.scene_number} Preview`}
-                  className="w-full h-full object-cover" 
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
-                  <div className="h-12 w-12 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                    </svg>
-                  </div>
-                  <span className="text-xs text-gray-500 font-medium">No storyboard scene visuals generated yet</span>
-                </div>
-              )}
-
-              {/* Pitch wave overlay at the bottom */}
-              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black via-black/60 to-transparent flex items-end">
-                <canvas ref={canvasRef} width="600" height="50" className="w-full h-12 opacity-80 mix-blend-screen pointer-events-none" />
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Audio Wave Visualizer</h3>
+            <div className="relative h-48 w-full rounded-xl bg-black border border-white/5 flex flex-col items-center justify-center overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+              {/* Pitch wave overlay filling the container */}
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-950/20">
+                <canvas ref={canvasRef} width="800" height="150" className="w-full h-full opacity-90 mix-blend-screen pointer-events-none" />
               </div>
-
-              {/* Active scene index label */}
-              {activeScene && (
-                <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-md border border-gray-800 text-[10px] text-indigo-400 font-bold tracking-wider font-mono">
-                  SCENE {activeScene.scene_number} / {scenesList.length}
-                </div>
-              )}
-
+ 
               {/* Live Timecode Badge */}
-              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-md border border-gray-800 text-[10px] text-white font-bold font-mono">
+              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-md border border-white/5 text-[10px] text-white font-bold font-mono">
                 {formatTime(activePlayTime)} / {formatTime(editorBuffer?.duration || duration || 0)}
               </div>
             </div>
