@@ -1630,27 +1630,27 @@ const TranscriptGenerator = () => {
         {/* Left Side: URL paste and Raw Transcript */}
         <div className="space-y-6 min-w-0">
           <div className="rounded-xl saas-card p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded bg-red-500/10 text-red-500 text-xs font-bold">1</span>
-              Import Video transcript
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold">1</span>
+              Import Video Transcript
             </h3>
             <div>
-              <label className="block text-xs text-gray-400 font-semibold mb-1 uppercase tracking-wider">YouTube URL</label>
-              <div className="flex flex-wrap gap-2">
+              <label className="block text-[10px] text-gray-505 text-gray-500 font-semibold mb-1.5 uppercase tracking-wider">YouTube URL</label>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
-                  className="flex-1 min-w-0 rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none text-sm"
+                  className="flex-1 min-w-0 rounded-lg border border-white/5 bg-gray-950/40 px-3.5 py-2 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none text-xs transition-all"
                   placeholder="https://www.youtube.com/watch?v=..."
                 />
                 <button
                   onClick={handleGenerateTranscript}
                   disabled={generatingTranscript}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500 disabled:opacity-50 flex items-center gap-2"
+                  className="rounded-lg btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
                   {generatingTranscript ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                   ) : (
                     'Extract'
                   )}
@@ -1662,14 +1662,14 @@ const TranscriptGenerator = () => {
           {/* Transcript editor container */}
           <div className="rounded-xl saas-card p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Original Transcript</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Original Transcript</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => copyToClipboard(transcript)}
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white transition-all"
+                  className="rounded p-1.5 text-gray-500 hover:bg-white/5 hover:text-white transition-all cursor-pointer"
                   title="Copy Transcript"
                 >
-                  <ClipboardDocumentIcon className="h-5 w-5" />
+                  <ClipboardDocumentIcon className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -1678,7 +1678,7 @@ const TranscriptGenerator = () => {
               onChange={(e) => setTranscript(e.target.value)}
               onBlur={() => handleSaveProject(false)}
               translate="no"
-              className="h-96 w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:outline-none resize-none font-sans notranslate"
+              className="h-80 w-full rounded-lg border border-white/5 bg-gray-950/40 p-4 text-xs leading-relaxed text-gray-300 focus:border-indigo-500 focus:outline-none resize-none font-sans notranslate transition-all"
               placeholder="Paste or generate YouTube transcript here..."
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
@@ -1694,7 +1694,7 @@ const TranscriptGenerator = () => {
                 <button
                   onClick={handleParaphrase}
                   disabled={paraphrasing || !transcript}
-                  className="flex items-center gap-2 rounded-lg btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-50 transition-all"
+                  className="flex items-center gap-2 rounded-lg btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {paraphrasing ? (
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -1715,26 +1715,26 @@ const TranscriptGenerator = () => {
           {/* AI script editor */}
           <div className="rounded-xl saas-card p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded bg-purple-500/10 text-purple-400 text-xs font-bold">2</span>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-purple-500/10 text-purple-400 text-xs font-bold">2</span>
                 Paraphrased YouTube Script
               </h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => copyToClipboard(activeTab === 'full' ? paraphrasedScript : voiceoverText)}
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white transition-all"
+                  className="rounded p-1.5 text-gray-500 hover:bg-white/5 hover:text-white transition-all cursor-pointer"
                   title={activeTab === 'full' ? "Copy Paraphrased Script" : "Copy Voiceover Text"}
                 >
-                  <ClipboardDocumentIcon className="h-5 w-5" />
+                  <ClipboardDocumentIcon className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
             {/* Tab navigation */}
-            <div className="relative flex p-0.5 bg-gray-950/60 rounded-lg border border-gray-800/80">
+            <div className="relative flex p-0.5 bg-gray-950/60 rounded-lg border border-white/5">
               {/* Sliding background highlight */}
               <div 
-                className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-indigo-600 transition-transform duration-300 ease-out"
+                className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-indigo-600 transition-transform duration-200 ease-out"
                 style={{
                   transform: activeTab === 'full' ? 'translateX(0)' : 'translateX(100%)'
                 }}
@@ -1742,8 +1742,8 @@ const TranscriptGenerator = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('full')}
-                className={`relative z-10 flex-1 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors duration-200 ${
-                  activeTab === 'full' ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
+                className={`relative z-10 flex-1 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors duration-150 cursor-pointer ${
+                  activeTab === 'full' ? 'text-white font-semibold' : 'text-gray-500 hover:text-white'
                 }`}
               >
                 <span className="sm:hidden">Full Script</span>
@@ -1752,8 +1752,8 @@ const TranscriptGenerator = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('voiceover')}
-                className={`relative z-10 flex-1 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors duration-200 ${
-                  activeTab === 'voiceover' ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
+                className={`relative z-10 flex-1 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors duration-150 cursor-pointer ${
+                  activeTab === 'voiceover' ? 'text-white font-semibold' : 'text-gray-500 hover:text-white'
                 }`}
               >
                 <span className="sm:hidden">Voiceover Only</span>
@@ -1761,20 +1761,20 @@ const TranscriptGenerator = () => {
               </button>
             </div>
 
-            <div className="relative h-96 w-full overflow-hidden">
+            <div className="relative h-80 w-full overflow-hidden">
               {paraphrasing ? (
-                <div className="absolute inset-0 z-20 rounded-lg border border-gray-800 bg-[#0d1222]/90 p-6 flex flex-col items-center justify-center space-y-6 backdrop-blur-sm">
+                <div className="absolute inset-0 z-20 rounded-lg border border-white/5 bg-[#09090b]/95 p-6 flex flex-col items-center justify-center space-y-6 backdrop-blur-sm">
                   <div className="flex flex-col items-center space-y-2 text-center">
-                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent shadow-[0_0_15px_rgba(99,102,241,0.3)]"></div>
-                    <span className="text-sm font-semibold text-gray-300 tracking-wide mt-2">{paraphraseStage}</span>
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent"></div>
+                    <span className="text-xs font-semibold text-gray-300 tracking-wide mt-2">{paraphraseStage}</span>
                   </div>
-                  <div className="w-full max-w-md bg-gray-850 rounded-full h-3.5 relative overflow-hidden border border-gray-700 shadow-inner">
+                  <div className="w-full max-w-sm bg-gray-900 rounded-full h-1.5 relative overflow-hidden border border-white/5">
                     <div 
-                      className="bg-indigo-600 h-full rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(99,102,241,0.4)]" 
+                      className="bg-indigo-600 h-full rounded-full transition-all duration-350 ease-out" 
                       style={{ width: `${paraphraseProgress}%` }}
                     ></div>
                   </div>
-                  <span className="text-xs font-semibold text-gray-400 font-mono">{paraphraseProgress}%</span>
+                  <span className="text-[10px] font-semibold text-gray-500 font-mono">{paraphraseProgress}%</span>
                 </div>
               ) : null}
 
@@ -1791,7 +1791,7 @@ const TranscriptGenerator = () => {
                   onChange={(e) => setParaphrasedScript(e.target.value)}
                   onBlur={() => handleSaveProject(false)}
                   translate="no"
-                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans notranslate"
+                  className="h-full w-full rounded-lg border border-white/5 bg-gray-950/40 p-4 text-xs leading-relaxed text-gray-300 focus:border-indigo-500 focus:outline-none resize-none font-sans notranslate transition-all"
                   placeholder="Mistral AI paraphrased script outputs will appear here..."
                 />
               </div>
@@ -1809,10 +1809,10 @@ const TranscriptGenerator = () => {
                   onChange={(e) => setVoiceoverText(e.target.value)}
                   onBlur={() => handleSaveProject(false)}
                   translate="no"
-                  className="h-full w-full rounded-lg border border-gray-800 bg-gray-950/40 p-4 pb-8 text-sm leading-relaxed text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-sans notranslate"
+                  className="h-full w-full rounded-lg border border-white/5 bg-gray-950/40 p-4 pb-8 text-xs leading-relaxed text-gray-300 focus:border-indigo-500 focus:outline-none resize-none font-sans notranslate transition-all"
                   placeholder="Cleaned voiceover text will appear here. You can edit this directly before generating audio."
                 />
-                <div className="absolute bottom-2 left-4 text-[10px] text-gray-500">
+                <div className="absolute bottom-2 left-4 text-[9px] text-gray-500">
                   * All stage directions, narrator tags, and formatting have been automatically cleaned.
                 </div>
               </div>
@@ -1827,10 +1827,10 @@ const TranscriptGenerator = () => {
               <button
                 onClick={handleGenerateVoiceover}
                 disabled={generatingVoice || (!paraphrasedScript && !voiceoverText)}
-                className="flex items-center gap-2 rounded-lg bg-gray-850 border border-gray-700 px-4 py-2 text-xs font-bold text-white hover:bg-gray-800 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50 transition-all cursor-pointer"
               >
                 {generatingVoice ? (
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                 ) : (
                   <>
                     <SpeakerWaveIcon className="h-4 w-4" />

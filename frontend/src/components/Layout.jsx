@@ -158,37 +158,52 @@ const Layout = ({ children }) => {
             })}
           </nav>
 
-          {/* User profile & Logout bottom (integrated on hover) */}
-          <div className={`border-t border-gray-800/40 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+          {/* User profile with Dropdown Popup Menu */}
+          <div className="relative group/profile">
             {user && (
-              <div 
-                onClick={handleLogout}
-                className={`group relative flex items-center rounded-lg bg-gray-900/30 hover:bg-red-950/20 border border-transparent hover:border-red-900/30 cursor-pointer transition-all duration-200 ${
-                  isCollapsed ? 'p-1.5 justify-center' : 'p-3 gap-3'
-                }`}
-                title="Click to Sign Out"
-              >
-                {/* Avatar / Hover Logout Icon */}
-                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 text-sm font-bold text-white uppercase shadow-[0_0_8px_rgba(99,102,241,0.3)] group-hover:from-red-600 group-hover:to-red-700 transition-all duration-200">
-                  <span className="group-hover:hidden">{user.name.charAt(0)}</span>
-                  <ArrowLeftStartOnRectangleIcon className="hidden group-hover:block h-5 w-5 text-white" />
-                </div>
-                
-                {/* Profile details & Slide-in Logout text */}
-                {!isCollapsed && (
-                  <div className="min-w-0 flex-1 relative overflow-hidden h-9">
-                    {/* Normal Details */}
-                    <div className="absolute inset-0 flex flex-col justify-center transition-all duration-300 transform group-hover:-translate-y-full opacity-100 group-hover:opacity-0">
-                      <p className="truncate text-sm font-semibold text-white leading-tight">{user.name}</p>
-                      <p className="truncate text-xs text-gray-400 mt-0.5">{user.email}</p>
-                    </div>
-                    {/* Logout Text (visible on hover) */}
-                    <div className="absolute inset-0 flex items-center justify-start gap-2 text-sm font-bold text-red-400 transition-all duration-300 transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100">
-                      <span>Sign Out</span>
-                    </div>
+              <>
+                <button
+                  type="button"
+                  className={`flex items-center rounded-lg bg-gray-900/30 hover:bg-white/5 border border-white/5 p-2 gap-3 cursor-pointer transition-all duration-200 w-full ${
+                    isCollapsed ? 'justify-center' : ''
+                  }`}
+                >
+                  {/* Avatar */}
+                  <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 text-sm font-bold text-white uppercase shadow-[0_0_8px_rgba(99,102,241,0.3)]">
+                    <span>{user.name.charAt(0)}</span>
                   </div>
-                )}
-              </div>
+                  
+                  {/* Profile details */}
+                  {!isCollapsed && (
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className="truncate text-xs font-semibold text-white leading-tight">{user.name}</p>
+                      <p className="truncate text-[10px] text-gray-500 mt-0.5">{user.email}</p>
+                    </div>
+                  )}
+                </button>
+
+                {/* Dropdown Menu - opens on hover */}
+                <div className="absolute bottom-full left-0 mb-2 w-48 rounded-lg border border-gray-800 bg-[#111113] p-1.5 shadow-2xl opacity-0 invisible group-hover/profile:opacity-100 group-hover/profile:visible transition-all duration-150 z-50">
+                  <div className="px-2.5 py-1.5 border-b border-gray-800/60 mb-1">
+                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Account</p>
+                    <p className="text-xs text-white font-bold truncate mt-0.5">{user.name}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      toast.success("Upgrade Modal Opening... (mock)");
+                    }}
+                    className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-xs text-indigo-400 hover:bg-white/5 font-semibold transition-colors cursor-pointer"
+                  >
+                    <span className="text-sm">💎</span> Upgrade Plan
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-xs text-red-400 hover:bg-red-950/20 font-semibold transition-colors cursor-pointer"
+                  >
+                    <span className="text-sm">🚪</span> Sign Out
+                  </button>
+                </div>
+              </>
             )}
           </div>
 
@@ -211,11 +226,14 @@ const Layout = ({ children }) => {
         {/* Header bar */}
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/5 bg-[#09090b]/95 px-4 md:px-8 backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold text-white">
-              {navItems.find((item) => item.path === location.pathname)?.name || 'Studio Dashboard'}
+            <h1 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <span className="text-gray-500 font-normal">Dashboard</span>
+              <span className="text-gray-700">/</span>
+              <span>Workspace</span>
             </h1>
           </div>
-
+          {/* Topbar Action Portal Mount point */}
+          <div id="topbar-actions" className="flex items-center gap-3"></div>
         </header>
 
         {/* Body content wrapper */}

@@ -12,6 +12,8 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 
+import { createPortal } from 'react-dom';
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -24,6 +26,15 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('projects');
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+
+  // Portal target tracking
+  const [topbarMounted, setTopbarMounted] = useState(false);
+
+  useEffect(() => {
+    if (document.getElementById('topbar-actions')) {
+      setTopbarMounted(true);
+    }
+  }, []);
 
   // Fetch all user projects on mount
   const fetchProjects = async () => {
@@ -114,20 +125,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header section with Create New Button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Your Workspace</h2>
-          <p className="mt-1 text-sm text-gray-400">Manage, create, and refine your YouTube scripts and scene plans.</p>
-        </div>
+    <div className="space-y-6">
+      {/* Portaled New Project button to layout topbar */}
+      {topbarMounted && createPortal(
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 rounded-lg btn-primary px-5 py-2.5 text-sm font-semibold w-full sm:w-auto shrink-0 cursor-pointer"
+          className="flex items-center justify-center gap-1.5 rounded-lg btn-primary px-3 py-1.5 text-xs font-semibold cursor-pointer"
         >
-          <PlusIcon className="h-5 w-5" />
+          <PlusIcon className="h-4 w-4" />
           New Project
-        </button>
+        </button>,
+        document.getElementById('topbar-actions')
+      )}
+
+      {/* Header section with smaller Workspace heading */}
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-bold text-white tracking-tight">Your Projects</h2>
+        <p className="text-xs text-gray-500">Manage, create, and refine your YouTube scripts and scene plans.</p>
       </div>
 
       {/* Admin Tab Switcher */}
