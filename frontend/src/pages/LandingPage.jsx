@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, animate } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   DocumentTextIcon, 
   FilmIcon, 
@@ -145,6 +146,13 @@ const FeatureCard = ({ icon: Icon, title, desc, delay }) => (
 /* ─── Main Landing Page ───────────────────────────────────────────── */
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Word-by-word stagger for headline — clean opacity + y, no rotateX glitch
   const headline1 = 'Script your next';
