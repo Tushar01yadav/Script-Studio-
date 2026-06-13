@@ -298,6 +298,15 @@ const TranscriptGenerator = () => {
   const animationFrameRef = useRef(null);
   const audioCtxRef = useRef(null);
 
+  const getAbsoluteUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+      return path;
+    }
+    const base = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'http://localhost:8000';
+    return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+  };
+
   const formatTime = (secs) => {
     if (isNaN(secs) || secs === Infinity) return '0:00';
     const m = Math.floor(secs / 60);
@@ -315,8 +324,9 @@ const TranscriptGenerator = () => {
 
   const togglePlayAudio = (url) => {
     if (!url) return;
+    const absUrl = getAbsoluteUrl(url);
 
-    if (currentlyPlayingUrl === url) {
+    if (currentlyPlayingUrl === absUrl) {
       if (isPlaying) {
         audioPlayer.pause();
         setIsPlaying(false);
@@ -328,7 +338,7 @@ const TranscriptGenerator = () => {
       if (audioPlayer) {
         audioPlayer.pause();
       }
-      const newPlayer = new Audio(url);
+      const newPlayer = new Audio(absUrl);
       newPlayer.onended = () => {
         setIsPlaying(false);
         setCurrentlyPlayingUrl(null);
@@ -344,7 +354,7 @@ const TranscriptGenerator = () => {
         setDuration(newPlayer.duration);
       }
       setAudioPlayer(newPlayer);
-      setCurrentlyPlayingUrl(url);
+      setCurrentlyPlayingUrl(absUrl);
       setIsPlaying(true);
       newPlayer.play().catch(() => {
         toast.error("Failed to play audio");
@@ -431,9 +441,10 @@ const TranscriptGenerator = () => {
       toast.error("Failed to load audio data for editing.");
       return;
     }
+    const absUrl = getAbsoluteUrl(url);
     setEditorLoading(true);
     try {
-      const response = await fetch(url);
+      const response = await fetch(absUrl);
       const arrayBuffer = await response.arrayBuffer();
       
       const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
@@ -800,7 +811,7 @@ const TranscriptGenerator = () => {
       setActivePlayTime(ws.getCurrentTime());
     });
 
-    ws.load(editorAudioUrl);
+    ws.load(getAbsoluteUrl(editorAudioUrl));
     fetchAndDecodeAudio(editorAudioUrl);
 
     return () => {
@@ -1356,7 +1367,7 @@ const TranscriptGenerator = () => {
                 Undo {historyStack.length > 1 && <span className="bg-pink-500/20 text-pink-400 px-1 rounded text-[10px] ml-0.5">{historyStack.length - 1}</span>}
               </button>
 
-              <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none ml-2">
+              <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={editorLoop}
@@ -1368,7 +1379,7 @@ const TranscriptGenerator = () => {
             </div>
 
             {/* Selection Helpers (Mark In, Mark Out, Clear) */}
-            <div className="flex flex-wrap items-center gap-1 bg-gray-950/40 p-1 rounded-md border border-gray-850 w-full sm:w-auto">
+            <div className="grid grid-cols-3 sm:flex items-center gap-1 bg-gray-950/40 p-1 rounded-md border border-gray-850 w-full sm:w-auto text-center">
               <button
                 type="button"
                 onClick={() => {
@@ -1388,7 +1399,7 @@ const TranscriptGenerator = () => {
                   }
                   toast.success("Selection start set to playhead");
                 }}
-                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
+                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center justify-center gap-1"
                 title="Set selection start point to current playhead time"
               >
                 <span className="text-pink-500 font-mono">[</span> Set Start
@@ -1413,7 +1424,7 @@ const TranscriptGenerator = () => {
                   }
                   toast.success("Selection end set to playhead");
                 }}
-                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
+                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center justify-center gap-1"
                 title="Set selection end point to current playhead time"
               >
                 Set End <span className="text-pink-500 font-mono">]</span>
@@ -1434,7 +1445,7 @@ const TranscriptGenerator = () => {
                   }
                   toast.success("Selection cleared (entire audio selected)");
                 }}
-                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-medium text-gray-400 hover:text-white transition-all"
+                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-medium text-gray-400 hover:text-white transition-all flex items-center justify-center"
                 title="Select entire audio timeline"
               >
                 Clear Selection

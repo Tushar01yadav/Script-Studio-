@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
@@ -25,6 +25,14 @@ run_db_migrations()
 
 # Create static audio folder
 os.makedirs(os.path.join("static", "audio"), exist_ok=True)
+
+class CORSStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -53,7 +61,7 @@ app.add_middleware(
 )
 
 # Mount static audio files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", CORSStaticFiles(directory="static"), name="static")
 
 # Include master API router
 app.include_router(api_router)
