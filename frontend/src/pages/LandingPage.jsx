@@ -248,14 +248,14 @@ const LandingPage = () => {
         >
           {/* Animated Glowing Growth Arrow (Physically pushed behind logo in Z-space) */}
           <motion.div 
-            className="absolute pointer-events-none"
             animate={{ opacity: [0.9, 0.1, 0.9] }}
             transition={{ duration: 4, ease: "easeInOut", repeat: Infinity, delay: 2.5 }}
             style={{ 
-              width: '600px', height: '300px', 
+              width: '280px', height: '140px', 
               top: '50%', left: '50%', 
               transform: 'translate(-50%, -45%) translateZ(-120px)' 
             }}
+            className="absolute pointer-events-none md:w-[600px] md:h-[300px]"
           >
             <svg width="100%" height="100%" viewBox="0 0 600 300" fill="none" className="drop-shadow-[0_0_12px_rgba(34,197,94,0.6)]">
               <defs>
