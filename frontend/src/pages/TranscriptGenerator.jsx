@@ -1197,14 +1197,14 @@ const TranscriptGenerator = () => {
         </div>
 
         {/* Workspace: Preview Player & Properties Inspector */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Left: Audio Waveform Visualizer & Oscilloscope (2/3 Width) */}
           <div className="lg:col-span-2 space-y-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Audio Wave Visualizer</h3>
-            <div className="relative h-48 w-full rounded-xl bg-black border border-white/5 flex flex-col items-center justify-center overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+            <div className="relative h-32 sm:h-48 w-full rounded-xl bg-black border border-white/5 flex flex-col items-center justify-center overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
               {/* Pitch wave overlay filling the container */}
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-950/20">
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-955/20 bg-gray-955 bg-gray-950/20">
                 <canvas ref={canvasRef} width="800" height="150" className="w-full h-full opacity-90 mix-blend-screen pointer-events-none" />
               </div>
  
@@ -1313,13 +1313,13 @@ const TranscriptGenerator = () => {
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-3">
             
             {/* Playback & History Controls */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => {
                   if (wavesurferRef.current) wavesurferRef.current.playPause();
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_12px_rgba(99,102,241,0.3)] animate-pulse"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_12px_rgba(99,102,241,0.3)] animate-pulse"
                 title="Play / Pause (Space)"
               >
                 {isEditorPlaying ? (
@@ -1368,7 +1368,7 @@ const TranscriptGenerator = () => {
             </div>
 
             {/* Selection Helpers (Mark In, Mark Out, Clear) */}
-            <div className="flex items-center gap-1.5 bg-gray-950/40 p-1 rounded-md border border-gray-850">
+            <div className="flex flex-wrap items-center gap-1 bg-gray-950/40 p-1 rounded-md border border-gray-850 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => {
@@ -1388,7 +1388,7 @@ const TranscriptGenerator = () => {
                   }
                   toast.success("Selection start set to playhead");
                 }}
-                className="h-8 px-2.5 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
+                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
                 title="Set selection start point to current playhead time"
               >
                 <span className="text-pink-500 font-mono">[</span> Set Start
@@ -1413,7 +1413,7 @@ const TranscriptGenerator = () => {
                   }
                   toast.success("Selection end set to playhead");
                 }}
-                className="h-8 px-2.5 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
+                className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1"
                 title="Set selection end point to current playhead time"
               >
                 Set End <span className="text-pink-500 font-mono">]</span>
@@ -1442,9 +1442,9 @@ const TranscriptGenerator = () => {
             </div>
 
             {/* Zoom & Playback Speed Controls */}
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
               {/* Zoom Slider */}
-              <div className="flex items-center gap-1.5 bg-gray-950/40 p-1.5 px-3 rounded-lg border border-gray-850">
+              <div className="flex items-center gap-1.5 bg-gray-950/40 p-1.5 px-3 rounded-lg border border-gray-850 flex-1 sm:flex-initial">
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Zoom</span>
                 <input
                   type="range"
@@ -1452,12 +1452,12 @@ const TranscriptGenerator = () => {
                   max="150"
                   value={editorZoom}
                   onChange={(e) => handleZoomChange(parseInt(e.target.value))}
-                  className="h-1 w-20 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                  className="h-1 w-full sm:w-20 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                 />
               </div>
 
               {/* Speed Controller Widget */}
-              <div className="flex items-center gap-2 bg-gray-950/40 border border-gray-850 rounded-lg p-1 px-2.5">
+              <div className="flex items-center gap-2 bg-gray-950/40 border border-gray-850 rounded-lg p-1 px-2.5 flex-1 sm:flex-initial justify-center">
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Speed:</span>
                 <button
                   type="button"
@@ -1505,7 +1505,7 @@ const TranscriptGenerator = () => {
               </div>
 
               {/* Playback Rate Range Slider */}
-              <div className="flex items-center gap-1.5 bg-gray-950/40 p-1.5 px-3 rounded-lg border border-gray-850">
+              <div className="flex items-center gap-1.5 bg-gray-950/40 p-1.5 px-3 rounded-lg border border-gray-850 flex-1 sm:flex-initial">
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-pink-500">Rate</span>
                 <input
                   type="range"
@@ -1514,7 +1514,7 @@ const TranscriptGenerator = () => {
                   step="0.05"
                   value={editorSpeed}
                   onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-                  className="h-1 w-20 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                  className="h-1 w-full sm:w-20 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                 />
               </div>
 
