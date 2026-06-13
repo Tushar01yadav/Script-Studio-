@@ -13,6 +13,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import LandingPage from './pages/LandingPage';
 import TranscriptGenerator from './pages/TranscriptGenerator';
 import SceneGenerator from './pages/SceneGenerator';
 import Settings from './pages/Settings';
@@ -25,7 +26,7 @@ const AppContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#070a13] text-gray-200 flex flex-col items-center justify-center font-sans p-6 select-none">
+      <div className="min-h-screen bg-[#09090b] text-gray-200 flex flex-col items-center justify-center font-sans p-6 select-none">
         <div className="relative flex flex-col items-center justify-center max-w-sm w-full text-center space-y-6">
           {/* Glowing pulse rings */}
           <div className="relative h-20 w-20 flex items-center justify-center">
@@ -51,7 +52,7 @@ const AppContent = () => {
           
           {serverWaking && (
             <div className="w-full bg-gray-950/60 p-0.5 rounded-full border border-gray-800/80 overflow-hidden h-1.5 relative">
-              <div className="h-full bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full animate-loading-bar"></div>
+              <div className="h-full bg-indigo-600 rounded-full animate-loading-bar"></div>
             </div>
           )}
         </div>
@@ -62,7 +63,8 @@ const AppContent = () => {
   return (
     <Router>
       <Routes>
-        {/* Public Auth Routes */}
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
@@ -72,7 +74,7 @@ const AppContent = () => {
 
         {/* Protected Workspace Routes wrapped in Layout */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Layout>

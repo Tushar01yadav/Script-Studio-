@@ -91,7 +91,7 @@ const Layout = ({ children }) => {
   };
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: HomeIcon },
+    { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
     { name: 'Transcript Generator', path: '/transcript', icon: DocumentTextIcon },
     { name: 'Scene Generator', path: '/scenes', icon: FilmIcon },
     { name: 'Settings', path: '/settings', icon: Cog6ToothIcon },
@@ -104,23 +104,23 @@ const Layout = ({ children }) => {
   const currentWidth = isCollapsed ? 64 : sidebarWidth;
 
   return (
-    <div className="flex min-h-screen bg-[#070a13] text-gray-200 overflow-x-hidden">
+    <div className="flex min-h-screen bg-[#09090b] text-gray-200 overflow-x-hidden">
       {/* Sidebar - Desktop Only */}
       {!isMobile && (
         <aside 
-          className={`fixed inset-y-0 left-0 flex flex-col border-r border-gray-800 bg-[#0d1222] select-none ${
+          className={`fixed inset-y-0 left-0 flex flex-col saas-panel select-none ${
             isDragging ? '' : 'transition-[width] duration-200 ease-out'
           } z-20`}
           style={{ width: `${currentWidth}px` }}
         >
           {/* Logo area */}
-          <div className={`flex h-16 items-center justify-center border-b border-gray-800 ${isCollapsed ? 'px-2' : 'px-6'}`}>
-            <Link to="/" className="flex items-center gap-2.5">
+          <div className={`flex h-16 items-center justify-center border-b border-gray-800/40 ${isCollapsed ? 'px-2' : 'px-6'}`}>
+            <Link to="/dashboard" className="flex items-center gap-2.5">
               <svg className="h-6 w-6 text-red-500 fill-current drop-shadow-[0_0_6px_rgba(239,68,68,0.6)]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.53 3.5 12 3.5 12 3.5s-7.53 0-9.388.553a3.003 3.003 0 0 0-2.11 2.11C0 8.018 0 12 0 12s0 3.982.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.858.553 9.388.553 9.388.553s7.53 0 9.388-.553a3.003 3.003 0 0 0 2.11-2.11C24 15.982 24 12 24 12s0-3.982-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
               </svg>
               {!isCollapsed && (
-                <span className="text-xl font-extrabold tracking-wider bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(99,102,241,0.25)] truncate">
+                <span className="text-xl font-extrabold tracking-wider text-white truncate">
                   SCRIPT STUDIO
                 </span>
               )}
@@ -143,12 +143,12 @@ const Layout = ({ children }) => {
                   key={item.name}
                   to={linkTarget}
                   title={isCollapsed ? item.name : undefined}
-                  className={`flex items-center gap-3 rounded-lg py-3 text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-all duration-150 ${
                     isCollapsed ? 'justify-center px-1' : 'px-4'
                   } ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/10 border border-indigo-500/10'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      ? 'bg-white/10 text-white shadow-sm'
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
                 >
                   <Icon className="h-5 w-5 shrink-0" />
@@ -159,11 +159,11 @@ const Layout = ({ children }) => {
           </nav>
 
           {/* User profile & Logout bottom (integrated on hover) */}
-          <div className={`border-t border-gray-800 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+          <div className={`border-t border-gray-800/40 ${isCollapsed ? 'p-2' : 'p-4'}`}>
             {user && (
               <div 
                 onClick={handleLogout}
-                className={`group relative flex items-center rounded-lg bg-gray-900/50 hover:bg-red-950/20 border border-transparent hover:border-red-900/40 cursor-pointer transition-all duration-200 ${
+                className={`group relative flex items-center rounded-lg bg-gray-900/30 hover:bg-red-950/20 border border-transparent hover:border-red-900/30 cursor-pointer transition-all duration-200 ${
                   isCollapsed ? 'p-1.5 justify-center' : 'p-3 gap-3'
                 }`}
                 title="Click to Sign Out"
@@ -209,7 +209,7 @@ const Layout = ({ children }) => {
         style={{ paddingLeft: isMobile ? '0px' : `${currentWidth}px` }}
       >
         {/* Header bar */}
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-800/80 bg-[#070a13]/80 px-4 md:px-8 backdrop-blur-md">
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/5 bg-[#09090b]/95 px-4 md:px-8 backdrop-blur-md">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold text-white">
               {navItems.find((item) => item.path === location.pathname)?.name || 'Studio Dashboard'}

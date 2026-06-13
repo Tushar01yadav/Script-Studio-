@@ -125,8 +125,8 @@ const SceneGenerator = () => {
         <h3 className="text-xl font-bold text-white mb-2">No active project selected</h3>
         <p className="text-gray-400 max-w-sm mb-6">Choose or create a project on the Dashboard to design a scene storyboard.</p>
         <button
-          onClick={() => navigate('/')}
-          className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 transition-all"
+          onClick={() => navigate('/dashboard')}
+          className="rounded-lg btn-primary px-6 py-2.5 text-sm font-semibold transition-all"
         >
           Go to Dashboard
         </button>
@@ -162,7 +162,7 @@ const SceneGenerator = () => {
           <button
             onClick={handleGenerateScenes}
             disabled={generatingScenes || !script}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 transition-all"
+            className="flex items-center gap-2 rounded-lg btn-primary px-5 py-2.5 text-sm font-semibold disabled:opacity-50 transition-all"
           >
             {generatingScenes ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -178,7 +178,7 @@ const SceneGenerator = () => {
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Left Side: Script Preview (READ-ONLY/EDITABLE) */}
-        <div className="lg:col-span-1 rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4 h-fit">
+        <div className="lg:col-span-1 rounded-xl saas-card p-6 space-y-4 h-fit">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <VideoCameraIcon className="h-5 w-5 text-gray-400" />
             Input Script
@@ -204,7 +204,7 @@ const SceneGenerator = () => {
               {scenes.map((scene, index) => (
                 <div
                   key={index}
-                  className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4 hover:border-purple-500/30 transition-all duration-300"
+                  className="rounded-xl saas-card p-6 space-y-4 hover:border-purple-500/30 transition-all duration-300"
                 >
                   <div className="flex items-center justify-between border-b border-gray-800/60 pb-3">
                     <span className="text-sm font-bold uppercase tracking-wider text-indigo-400">

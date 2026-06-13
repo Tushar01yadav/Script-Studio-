@@ -35,11 +35,11 @@ const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#070a13] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-[#0d1222]/80 p-8 shadow-2xl backdrop-blur-md">
+    <div className="flex min-h-screen items-center justify-center bg-[#09090b] px-4">
+      <div className="w-full max-w-md rounded-xl saas-card p-8">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-bold tracking-tight text-white">
             YouTube Script Studio
           </h2>
           <p className="mt-2 text-sm text-gray-400">Create your account to start generating</p>
@@ -59,7 +59,7 @@ const Register = () => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                className="mt-1 block w-full rounded-lg border border-gray-700/60 bg-gray-950/40 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/80 focus:outline-none transition-all"
                 placeholder="John Doe"
               />
             </div>
@@ -75,7 +75,7 @@ const Register = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                className="mt-1 block w-full rounded-lg border border-gray-700/60 bg-gray-950/40 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/80 focus:outline-none transition-all"
                 placeholder="you@example.com"
               />
             </div>
@@ -91,7 +91,7 @@ const Register = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                className="mt-1 block w-full rounded-lg border border-gray-700/60 bg-gray-950/40 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/80 focus:outline-none transition-all"
                 placeholder="Min 8 characters"
               />
             </div>
@@ -107,7 +107,7 @@ const Register = () => {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                className="mt-1 block w-full rounded-lg border border-gray-700/60 bg-gray-950/40 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/80 focus:outline-none transition-all"
                 placeholder="Re-enter password"
               />
             </div>
@@ -117,7 +117,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full justify-center rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 focus:outline-none disabled:opacity-50"
+              className="flex w-full justify-center rounded-lg btn-primary py-2.5 text-sm font-semibold cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -131,7 +131,7 @@ const Register = () => {
         {/* Footer info link */}
         <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-indigo-400 hover:text-indigo-300">
+          <Link to="/login" className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
             Sign In
           </Link>
         </p>

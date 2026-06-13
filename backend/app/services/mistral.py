@@ -15,7 +15,12 @@ async def paraphrase_transcript(transcript: str, language: str = "English") -> s
     prompt = (
         "You are an expert YouTube content creator and scriptwriter.\n"
         f"Rewrite the following transcript into a highly engaging, retention-optimized YouTube narration script in {language}.\n"
-        "Improve: the hook, retention hook, visual placeholders, storytelling, clarity, flow, and emotional engagement.\n"
+        "Improve: storytelling, clarity, flow, and emotional engagement.\n"
+        "CRITICAL RULES FOR TTS:\n"
+        "- The output MUST contain ONLY the raw spoken text.\n"
+        "- DO NOT include ANY speaker labels (e.g., 'Narrator:', 'नैरेटर:').\n"
+        "- DO NOT include ANY structural notes, stage directions, or visual placeholders (e.g., 'Hook:', 'Tip:', 'CTA:').\n"
+        "- DO NOT include ANY preamble or postamble.\n"
         "Do NOT change the core meaning or introduce false information.\n"
         "Keep the narration script clean, professional, and directly speak to the audience.\n\n"
         f"Transcript:\n{transcript}"

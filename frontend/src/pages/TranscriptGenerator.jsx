@@ -1110,8 +1110,8 @@ const TranscriptGenerator = () => {
         <h3 className="text-xl font-bold text-white mb-2">No active project selected</h3>
         <p className="text-gray-400 max-w-sm mb-6">Please navigate to the Dashboard and choose or create a project to start working.</p>
         <button
-          onClick={() => navigate('/')}
-          className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 transition-all"
+          onClick={() => navigate('/dashboard')}
+          className="rounded-lg btn-primary px-6 py-2.5 text-sm font-semibold transition-all"
         >
           Go to Dashboard
         </button>
@@ -1238,7 +1238,7 @@ const TranscriptGenerator = () => {
           {/* Right: Properties Inspector (1/3 Width) */}
           <div className="space-y-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Properties & Selection</h3>
-            <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-4 sm:p-5 space-y-4 sm:space-y-5 h-auto lg:h-[calc(100%-28px)] min-h-0 lg:min-h-[350px] flex flex-col justify-between relative">
+            <div className="rounded-xl saas-card p-4 sm:p-5 space-y-4 sm:space-y-5 h-auto lg:h-[calc(100%-28px)] min-h-0 lg:min-h-[350px] flex flex-col justify-between relative">
               {editorLoading && (
                 <div className="absolute inset-0 bg-[#0d1222]/70 backdrop-blur-sm flex items-center justify-center rounded-xl z-20">
                   <div className="flex flex-col items-center space-y-3">
@@ -1297,7 +1297,7 @@ const TranscriptGenerator = () => {
                   <button
                     onClick={handleRegenerateSelection}
                     disabled={regeneratingSegment || !editorTextSegment.trim() || editorStartTime === editorEndTime}
-                    className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    className="w-full rounded-lg btn-primary py-2 text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     {regeneratingSegment ? (
                       <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -1327,7 +1327,7 @@ const TranscriptGenerator = () => {
         </div>
 
         {/* Timeline Panel (Full Width, Bottom) */}
-        <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+        <div className="rounded-xl saas-card p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
           
           {/* Timeline Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-3">
@@ -1629,7 +1629,7 @@ const TranscriptGenerator = () => {
       <div className="grid gap-8 lg:grid-cols-2 min-w-0">
         {/* Left Side: URL paste and Raw Transcript */}
         <div className="space-y-6 min-w-0">
-          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+          <div className="rounded-xl saas-card p-6 space-y-4">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded bg-red-500/10 text-red-500 text-xs font-bold">1</span>
               Import Video transcript
@@ -1660,7 +1660,7 @@ const TranscriptGenerator = () => {
           </div>
 
           {/* Transcript editor container */}
-          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+          <div className="rounded-xl saas-card p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Original Transcript</h3>
               <div className="flex items-center gap-2">
@@ -1694,7 +1694,7 @@ const TranscriptGenerator = () => {
                 <button
                   onClick={handleParaphrase}
                   disabled={paraphrasing || !transcript}
-                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 transition-all"
+                  className="flex items-center gap-2 rounded-lg btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-50 transition-all"
                 >
                   {paraphrasing ? (
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -1713,7 +1713,7 @@ const TranscriptGenerator = () => {
         {/* Right Side: AI Rewrite & TTS Voiceover */}
         <div className="space-y-6">
           {/* AI script editor */}
-          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+          <div className="rounded-xl saas-card p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded bg-purple-500/10 text-purple-400 text-xs font-bold">2</span>
@@ -1734,7 +1734,7 @@ const TranscriptGenerator = () => {
             <div className="relative flex p-0.5 bg-gray-950/60 rounded-lg border border-gray-800/80">
               {/* Sliding background highlight */}
               <div 
-                className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md transition-transform duration-300 ease-out"
+                className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-indigo-600 transition-transform duration-300 ease-out"
                 style={{
                   transform: activeTab === 'full' ? 'translateX(0)' : 'translateX(100%)'
                 }}
@@ -1770,7 +1770,7 @@ const TranscriptGenerator = () => {
                   </div>
                   <div className="w-full max-w-md bg-gray-850 rounded-full h-3.5 relative overflow-hidden border border-gray-700 shadow-inner">
                     <div 
-                      className="bg-gradient-to-r from-indigo-600 to-violet-600 h-full rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(99,102,241,0.4)]" 
+                      className="bg-indigo-600 h-full rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(99,102,241,0.4)]" 
                       style={{ width: `${paraphraseProgress}%` }}
                     ></div>
                   </div>
@@ -1842,7 +1842,7 @@ const TranscriptGenerator = () => {
           </div>
 
           {/* Text-to-Speech audio controller */}
-          <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-5">
+          <div className="rounded-xl saas-card p-6 space-y-5">
             <div className="border-b border-gray-800 pb-4">
               <h3 className="text-lg font-semibold text-white mb-4">Voiceover Settings</h3>
               

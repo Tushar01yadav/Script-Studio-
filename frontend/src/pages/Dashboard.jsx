@@ -118,12 +118,12 @@ const Dashboard = () => {
       {/* Header section with Create New Button */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-extrabold text-white">Your Workspace</h2>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">Your Workspace</h2>
           <p className="mt-1 text-sm text-gray-400">Manage, create, and refine your YouTube scripts and scene plans.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-550/10 hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 w-full sm:w-auto shrink-0"
+          className="flex items-center justify-center gap-2 rounded-lg btn-primary px-5 py-2.5 text-sm font-semibold w-full sm:w-auto shrink-0 cursor-pointer"
         >
           <PlusIcon className="h-5 w-5" />
           New Project
@@ -132,7 +132,7 @@ const Dashboard = () => {
 
       {/* Admin Tab Switcher */}
       {user && user.email === 'admin@scriptstudio.com' && (
-        <div className="flex border-b border-gray-800">
+        <div className="flex border-b border-gray-800/60">
           <button
             onClick={() => setActiveTab('projects')}
             className={`px-6 py-3 text-sm font-bold border-b-2 transition-all cursor-pointer ${
@@ -169,26 +169,26 @@ const Dashboard = () => {
           </div>
         ) : requests.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-800 bg-[#0d1222]/30 py-24 text-center">
-            <CheckIcon className="h-12 w-12 text-emerald-500 mb-4" />
+            <CheckIcon className="h-12 w-12 text-emerald-505 mb-4" />
             <h3 className="text-xl font-bold text-white">No pending requests</h3>
             <p className="mt-1 text-sm text-gray-400 max-w-xs">All Google sign-ins have been approved or processed.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-gray-800 bg-[#0d1222]/80">
+          <div className="overflow-x-auto rounded-xl border border-gray-800/60 bg-[#0d1222]/60 backdrop-blur-md">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-gray-800 text-xs font-bold uppercase tracking-wider text-gray-400 bg-gray-950/20">
+                <tr className="border-b border-gray-800/80 text-xs font-bold uppercase tracking-wider text-gray-400 bg-gray-955/40">
                   <th className="p-4 sm:p-6">Name</th>
                   <th className="p-4 sm:p-6">Email Address</th>
                   <th className="p-4 sm:p-6">Requested At</th>
                   <th className="p-4 sm:p-6 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/60 text-sm text-gray-300">
+              <tbody className="divide-y divide-gray-850/40 text-sm text-gray-300">
                 {requests.map((req) => (
                   <tr key={req.id} className="hover:bg-gray-800/10 transition-colors">
                     <td className="p-4 sm:p-6 font-semibold text-white">{req.name}</td>
-                    <td className="p-4 sm:p-6 font-mono text-xs">{req.email}</td>
+                    <td className="p-4 sm:p-6 font-mono text-xs text-indigo-300">{req.email}</td>
                     <td className="p-4 sm:p-6 text-gray-400">
                       {new Date(req.created_at).toLocaleDateString()} {new Date(req.created_at).toLocaleTimeString()}
                     </td>
@@ -240,10 +240,10 @@ const Dashboard = () => {
               <div
                 key={project.id}
                 onClick={() => handleProjectClick(project)}
-                className="group relative cursor-pointer rounded-xl border border-gray-800/80 bg-[#0d1222]/80 p-3.5 sm:p-6 transition-all duration-300 hover:border-indigo-500/40 hover:bg-[#11172a] hover:shadow-xl hover:-translate-y-1 min-w-0"
+                className="group relative cursor-pointer rounded-xl saas-card p-4 sm:p-6 min-w-0"
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-white transition-all">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
                     <VideoCameraIcon className="h-4 w-4 sm:h-6 sm:w-6" />
                   </div>
                   <button
@@ -264,7 +264,7 @@ const Dashboard = () => {
                   </p>
                 </div>
 
-                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:items-center justify-between border-t border-gray-800/60 pt-3 sm:pt-4 text-[10px] sm:text-xs text-gray-455">
+                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:items-center justify-between border-t border-gray-800/60 pt-3 sm:pt-4 text-[10px] sm:text-xs text-gray-500">
                   <span className="truncate">Updated {new Date(project.updated_at).toLocaleDateString()}</span>
                   <span className="flex items-center gap-1 font-semibold text-indigo-400 group-hover:translate-x-1 transition-transform self-end sm:self-auto">
                     Open
@@ -279,8 +279,8 @@ const Dashboard = () => {
 
       {/* Create Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-gray-800 bg-[#0d1222] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#09090b]/80 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl saas-card p-6">
             <h3 className="text-xl font-bold text-white mb-4">Create New Project</h3>
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
@@ -290,7 +290,7 @@ const Dashboard = () => {
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  className="mt-1 block w-full rounded-lg border border-gray-750 bg-gray-950/40 px-4 py-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-all"
                   placeholder="My YouTube Video Script"
                 />
               </div>
@@ -301,13 +301,13 @@ const Dashboard = () => {
                     setIsModalOpen(false);
                     setNewTitle('');
                   }}
-                  className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-700"
+                  className="rounded-lg bg-gray-850 px-4 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white hover:from-indigo-500 hover:to-violet-500"
+                  className="rounded-lg btn-primary px-4 py-2 text-sm font-semibold cursor-pointer"
                 >
                   Create
                 </button>

@@ -31,8 +31,8 @@ const VerifyEmail = () => {
   }, [searchParams]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#070a13] px-4">
-      <div className="w-full max-w-md text-center rounded-2xl border border-gray-800 bg-[#0d1222]/80 p-8 shadow-2xl backdrop-blur-md">
+    <div className="flex min-h-screen items-center justify-center bg-[#09090b] px-4">
+      <div className="w-full max-w-md text-center rounded-2xl saas-card p-8">
         {status === 'verifying' && (
           <div className="space-y-4">
             <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
@@ -48,7 +48,7 @@ const VerifyEmail = () => {
             <p className="text-gray-400 text-sm">Your email address has been successfully verified. You can now use all functions of YouTube Script Studio.</p>
             <Link
               to="/login"
-              className="inline-block rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500"
+              className="inline-block rounded-lg btn-primary px-6 py-2.5 text-sm font-semibold"
             >
               Sign In
             </Link>

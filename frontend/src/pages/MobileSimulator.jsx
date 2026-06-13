@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   DevicePhoneMobileIcon, 
   ArrowPathIcon, 
@@ -107,14 +108,26 @@ const MobileSimulator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070a13] text-gray-200 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#09090b] text-gray-200 flex flex-col font-sans">
       {/* Top Banner */}
       <header className="h-16 shrink-0 border-b border-gray-800 bg-[#0d1222]/80 px-6 flex items-center justify-between backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <svg className="h-6 w-6 text-red-500 fill-current drop-shadow-[0_0_6px_rgba(239,68,68,0.6)]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.53 3.5 12 3.5 12 3.5s-7.53 0-9.388.553a3.003 3.003 0 0 0-2.11 2.11C0 8.018 0 12 0 12s0 3.982.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.858.553 9.388.553 9.388.553s7.53 0 9.388-.553a3.003 3.003 0 0 0 2.11-2.11C24 15.982 24 12 24 12s0-3.982-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-          </svg>
-          <span className="text-xl font-extrabold tracking-wider bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(99,102,241,0.25)]">
+          <motion.div
+            animate={{ rotate: [0, 18, 0, -18, 0] }}
+            transition={{
+              duration: 6,
+              ease: 'easeInOut',
+              repeat: Infinity,
+              repeatType: 'loop',
+              times: [0, 0.25, 0.5, 0.75, 1],
+            }}
+            style={{ display: 'inline-flex', transformOrigin: 'center top' }}
+          >
+            <svg className="h-6 w-6 text-red-500 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.53 3.5 12 3.5 12 3.5s-7.53 0-9.388.553a3.003 3.003 0 0 0-2.11 2.11C0 8.018 0 12 0 12s0 3.982.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.858.553 9.388.553 9.388.553s7.53 0 9.388-.553a3.003 3.003 0 0 0 2.11-2.11C24 15.982 24 12 24 12s0-3.982-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            </svg>
+          </motion.div>
+          <span className="text-xl font-extrabold tracking-wider text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.25)]">
             MOBILE SIMULATOR
           </span>
           <span className="text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20 font-semibold hidden sm:inline">
@@ -122,7 +135,7 @@ const MobileSimulator = () => {
           </span>
         </div>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
           className="rounded-lg bg-gray-800 hover:bg-gray-700 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
         >
           Back to Desktop Studio
@@ -170,7 +183,7 @@ const MobileSimulator = () => {
             <div className="relative flex bg-gray-950/60 p-0.5 rounded-lg border border-gray-800">
               {/* Sliding background highlight */}
               <div 
-                className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md transition-transform duration-300 ease-out"
+                className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-indigo-600 transition-transform duration-300 ease-out"
                 style={{
                   transform: !isLandscape ? 'translateX(0)' : 'translateX(100%)'
                 }}
@@ -201,7 +214,7 @@ const MobileSimulator = () => {
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Navigation Shortcuts</label>
             <div className="space-y-1">
               {[
-                { name: 'Dashboard', path: '/', icon: HomeIcon },
+                { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
                 { name: 'Transcript Generator', path: '/transcript', icon: DocumentTextIcon },
                 { name: 'Scene Generator', path: '/scenes', icon: FilmIcon },
                 { name: 'Settings', path: '/settings', icon: Cog6ToothIcon },
@@ -312,7 +325,7 @@ const MobileSimulator = () => {
             )}
 
             {/* Embedded Iframe App View */}
-            <div className="w-full h-full rounded-2xl overflow-hidden bg-[#070a13]">
+            <div className="w-full h-full rounded-2xl overflow-hidden bg-[#09090b]">
               <iframe
                 key={iframeKey}
                 ref={iframeRef}

@@ -48,7 +48,7 @@ const CustomSelect = ({ value, onChange, options, className = '', disabled = fal
                   onClick={() => handleSelect(option.value)}
                   className={`w-full flex items-center justify-between rounded-md px-3 py-2 text-left text-xs transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold'
+                      ? 'bg-indigo-600 text-white font-semibold'
                       : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100'
                   }`}
                 >

@@ -39,8 +39,8 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#070a13] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-[#0d1222]/80 p-8 shadow-2xl backdrop-blur-md">
+    <div className="flex min-h-screen items-center justify-center bg-[#09090b] px-4">
+      <div className="w-full max-w-md rounded-2xl saas-card p-8">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white">Choose New Password</h2>
           <p className="mt-2 text-sm text-gray-400">Please set a secure password with at least 8 characters.</p>
@@ -83,7 +83,7 @@ const ResetPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full justify-center rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 focus:outline-none disabled:opacity-50"
+              className="flex w-full justify-center rounded-lg btn-primary py-2.5 text-sm font-semibold focus:outline-none disabled:opacity-50"
             >
               {loading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>

@@ -1,13 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* Premium Theme & Global Styles */
+/* Premium Professional SaaS Theme & Global Styles */
 @layer base {
   body {
-    background-color: #09090b;
+    background-color: #09090b; /* Clean solid dark background */
     color: #f4f4f5;
-    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif; /* Inter for primary, cleaner look */
     letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
   }
 
   /* Smooth inputs & buttons focusing */
@@ -16,37 +22,48 @@
   }
 }
 
-/* Glassmorphism Classes */
-.glass {
-  background: rgba(20, 20, 25, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+/* Professional SaaS Utilities */
+.saas-card {
+  background-color: #111113; /* Solid, slightly lighter than bg */
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Crisp subtle border */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease-in-out;
 }
 
-.glass-card {
-  background: linear-gradient(135deg, rgba(24, 24, 27, 0.7) 0%, rgba(9, 9, 11, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.saas-card:hover {
+  border-color: rgba(255, 255, 255, 0.15); /* Subtle highlight on hover, no glow */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
-.glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.25);
-  box-shadow: 0 20px 48px 0 rgba(99, 102, 241, 0.08);
-  transform: translateY(-2px);
+.saas-panel {
+  background-color: #0e0e11;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Customized scrollbar */
+.btn-primary {
+  background-color: #4f46e5; /* Indigo-600 */
+  color: white;
+  border: 1px solid transparent;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #4338ca; /* Indigo-700 */
+}
+
+.btn-primary:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Customized scrollbar - Clean & Minimal */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -58,7 +75,7 @@
   background: #3f3f46;
 }
 
-/* Hide scrollbar on mobile screens (< 768px) for clean mobile app feel */
+/* Hide scrollbar on mobile screens */
 @media (max-width: 768px) {
   ::-webkit-scrollbar {
     display: none;
@@ -66,42 +83,16 @@
     height: 0 !important;
   }
   body, html, div, textarea {
-    -ms-overflow-style: none !important;  /* IE and Edge */
-    scrollbar-width: none !important;  /* Firefox */
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
-}
-
-/* Micro-animations */
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 3s infinite;
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Global transitions */
-.transition-glow {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Page/Route smooth fade-in slide transition */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -110,10 +101,18 @@
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInUp 0.2s ease-out forwards;
 }
 
-/* Server wakeup loading bar */
+/* Shimmer effect for buttons */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Server wakeup loading bar - Clean solid version */
 @keyframes loadingBar {
   from { width: 0%; }
   to { width: 95%; }

@@ -81,7 +81,7 @@ const Settings = () => {
 
       <div className="space-y-6">
         {/* Profile Info block */}
-        <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+        <div className="rounded-xl saas-card p-6 space-y-4">
           <h3 className="text-lg font-semibold text-white">Profile Details</h3>
           <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -107,7 +107,7 @@ const Settings = () => {
             <button
               type="submit"
               disabled={updatingProfile}
-              className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 cursor-pointer transition-all"
+              className="rounded-lg btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 cursor-pointer transition-all"
             >
               {updatingProfile ? 'Saving...' : 'Save Profile'}
             </button>
@@ -115,7 +115,7 @@ const Settings = () => {
         </div>
 
         {/* Change password block */}
-        <div className="rounded-xl border border-gray-800 bg-[#0d1222]/80 p-6 space-y-4">
+        <div className="rounded-xl saas-card p-6 space-y-4">
           <h3 className="text-lg font-semibold text-white">Update Password</h3>
           <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-lg">
             <div>
@@ -153,7 +153,7 @@ const Settings = () => {
             <button
               type="submit"
               disabled={updatingPassword}
-              className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/10 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 cursor-pointer transition-all"
+              className="rounded-lg btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 cursor-pointer transition-all"
             >
               {updatingPassword ? 'Updating...' : 'Update Password'}
             </button>
