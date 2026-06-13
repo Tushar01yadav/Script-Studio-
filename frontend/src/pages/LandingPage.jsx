@@ -234,9 +234,7 @@ const LandingPage = () => {
       </motion.nav>
 
       {/* ── Hero Section ─────────────────────── */}
-      <section className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-4 pt-16 sm:pt-12 md:pt-8 pb-16">
-
-
+      <section className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-4 pt-24 sm:pt-16 md:pt-10 pb-16">
 
         {/* 3D Revolving YouTube Logo & Growth Arrow Background */}
         <motion.div
@@ -251,7 +249,7 @@ const LandingPage = () => {
             animate={{ opacity: [0.9, 0.1, 0.9] }}
             transition={{ duration: 4, ease: "easeInOut", repeat: Infinity, delay: 2.5 }}
             style={{ 
-              width: '280px', height: '140px', 
+              width: '380px', height: '190px', 
               top: '50%', left: '50%', 
               transform: 'translate(-50%, -45%) translateZ(-120px)' 
             }}
