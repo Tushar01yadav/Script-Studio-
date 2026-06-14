@@ -1187,7 +1187,7 @@ const TranscriptGenerator = () => {
     ) || sceneTimelineBlocks[0];
 
     return (
-      <div className="space-y-6 animate-fadeIn w-full max-w-full overflow-x-hidden">
+      <div className="space-y-6 animate-fadeIn w-full max-w-full overflow-hidden">
         {/* Editor Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-800 pb-4">
           <div>
@@ -1222,7 +1222,7 @@ const TranscriptGenerator = () => {
         </div>
 
         {/* Workspace: Preview Player & Properties Inspector */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-full overflow-hidden">
           
           {/* Left: Audio Waveform Visualizer & Oscilloscope (2/3 Width) */}
           <div className="lg:col-span-2 space-y-4 min-w-0">
@@ -1332,7 +1332,7 @@ const TranscriptGenerator = () => {
         </div>
 
         {/* Timeline Panel (Full Width, Bottom) */}
-        <div className="rounded-xl saas-card p-3 sm:p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+        <div className="rounded-xl saas-card p-3 sm:p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.3)] w-full max-w-full overflow-hidden">
           
           {/* Timeline Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-3">
