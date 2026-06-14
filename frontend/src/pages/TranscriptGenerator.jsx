@@ -441,12 +441,17 @@ const TranscriptGenerator = () => {
       toast.error("Failed to load audio data for editing.");
       return;
     }
-    const absUrl = getAbsoluteUrl(url);
     setEditorLoading(true);
     try {
-      const response = await fetch(absUrl);
-      const arrayBuffer = await response.arrayBuffer();
+      const response = await api.get(url, { responseType: 'blob' });
+      const blob = response.data;
+      const blobUrl = URL.createObjectURL(blob);
       
+      if (wavesurferRef.current) {
+        wavesurferRef.current.load(blobUrl);
+      }
+      
+      const arrayBuffer = await blob.arrayBuffer();
       const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
       audioCtxRef.current = audioContext;
       
@@ -640,10 +645,8 @@ const TranscriptGenerator = () => {
         emotion: selectedEmotion
       });
       
-      const segmentUrl = `${api.defaults.baseURL}${res.data.audio_url}`;
-      
-      const segmentResponse = await fetch(segmentUrl);
-      const segmentArrayBuffer = await segmentResponse.arrayBuffer();
+      const segmentResponse = await api.get(res.data.audio_url, { responseType: 'arraybuffer' });
+      const segmentArrayBuffer = segmentResponse.data;
       
       const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
       const segmentBuffer = await audioContext.decodeAudioData(segmentArrayBuffer);
@@ -811,7 +814,6 @@ const TranscriptGenerator = () => {
       setActivePlayTime(ws.getCurrentTime());
     });
 
-    ws.load(getAbsoluteUrl(editorAudioUrl));
     fetchAndDecodeAudio(editorAudioUrl);
 
     return () => {
@@ -1318,7 +1320,7 @@ const TranscriptGenerator = () => {
         </div>
 
         {/* Timeline Panel (Full Width, Bottom) */}
-        <div className="rounded-xl saas-card p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+        <div className="rounded-xl saas-card p-3 sm:p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
           
           {/* Timeline Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-3">
@@ -1448,7 +1450,7 @@ const TranscriptGenerator = () => {
                 className="h-8 px-2 rounded hover:bg-gray-800 text-[11px] font-medium text-gray-400 hover:text-white transition-all flex items-center justify-center"
                 title="Select entire audio timeline"
               >
-                Clear Selection
+                Clear<span className="hidden sm:inline"> Selection</span>
               </button>
             </div>
 
