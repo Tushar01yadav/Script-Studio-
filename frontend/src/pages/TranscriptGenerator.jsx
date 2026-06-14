@@ -298,13 +298,23 @@ const TranscriptGenerator = () => {
   const animationFrameRef = useRef(null);
   const audioCtxRef = useRef(null);
 
+  const getRelativeAudioPath = (path) => {
+    if (!path) return '';
+    const staticIdx = path.indexOf('/static/audio/');
+    if (staticIdx !== -1) {
+      return path.substring(staticIdx);
+    }
+    return path;
+  };
+
   const getAbsoluteUrl = (path) => {
     if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
-      return path;
+    const cleanPath = getRelativeAudioPath(path);
+    if (cleanPath.startsWith('blob:')) {
+      return cleanPath;
     }
     const base = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'http://localhost:8000';
-    return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+    return `${base}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
   };
 
   const formatTime = (secs) => {
@@ -443,7 +453,8 @@ const TranscriptGenerator = () => {
     }
     setEditorLoading(true);
     try {
-      const response = await api.get(url, { responseType: 'blob' });
+      const relativeUrl = getRelativeAudioPath(url);
+      const response = await api.get(relativeUrl, { responseType: 'blob' });
       const blob = response.data;
       const blobUrl = URL.createObjectURL(blob);
       
@@ -645,7 +656,8 @@ const TranscriptGenerator = () => {
         emotion: selectedEmotion
       });
       
-      const segmentResponse = await api.get(res.data.audio_url, { responseType: 'arraybuffer' });
+      const relativeUrl = getRelativeAudioPath(res.data.audio_url);
+      const segmentResponse = await api.get(relativeUrl, { responseType: 'arraybuffer' });
       const segmentArrayBuffer = segmentResponse.data;
       
       const audioContext = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
@@ -1175,7 +1187,7 @@ const TranscriptGenerator = () => {
     ) || sceneTimelineBlocks[0];
 
     return (
-      <div className="space-y-6 animate-fadeIn">
+      <div className="space-y-6 animate-fadeIn w-full max-w-full overflow-x-hidden">
         {/* Editor Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-800 pb-4">
           <div>
@@ -1213,12 +1225,12 @@ const TranscriptGenerator = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Left: Audio Waveform Visualizer & Oscilloscope (2/3 Width) */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 min-w-0">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Audio Wave Visualizer</h3>
             <div className="relative h-32 sm:h-48 w-full rounded-xl bg-black border border-white/5 flex flex-col items-center justify-center overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
               {/* Pitch wave overlay filling the container */}
               <div className="absolute inset-0 flex items-center justify-center bg-gray-955/20 bg-gray-955 bg-gray-950/20">
-                <canvas ref={canvasRef} width="800" height="150" className="w-full h-full opacity-90 mix-blend-screen pointer-events-none" />
+                <canvas ref={canvasRef} width="800" height="150" className="max-w-full w-full h-full opacity-90 mix-blend-screen pointer-events-none" />
               </div>
  
               {/* Live Timecode Badge */}
@@ -1227,9 +1239,9 @@ const TranscriptGenerator = () => {
               </div>
             </div>
           </div>
-
+ 
           {/* Right: Properties Inspector (1/3 Width) */}
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Properties & Selection</h3>
             <div className="rounded-xl saas-card p-4 sm:p-5 space-y-4 sm:space-y-5 h-auto lg:h-[calc(100%-28px)] min-h-0 lg:min-h-[350px] flex flex-col justify-between relative">
               {editorLoading && (
